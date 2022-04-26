@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="kite_navigation" type="kite_navigation" name="kite_navigation_node" output="screen"></node>
+</launch>

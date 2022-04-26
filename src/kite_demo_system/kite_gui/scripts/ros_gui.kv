@@ -1,0 +1,453 @@
+#:import get_color_from_hex kivy.utils.get_color_from_hex
+
+<ContentNavigationDrawer>
+
+    ScrollView:
+
+        MDList:
+
+            OneLineIconListItem:
+                text: "Main menu"
+                
+                on_press:
+                    root.nav_drawer.set_state("close")
+                    root.screen_manager.current = "scr 1"
+                    app.root.ids.toolbar.title = "KITE Robotics: Main menu"
+
+                IconLeftWidget:
+                    icon: "menu-right"
+                    on_press:
+                        root.nav_drawer.set_state("close")
+                        root.screen_manager.current = "scr 1"
+                        app.root.ids.toolbar.title = "KITE Robotics: Main menu"
+
+            OneLineIconListItem:
+                text: "Information menu"
+                
+                on_press:
+                    root.nav_drawer.set_state("close")
+                    root.screen_manager.current = "scr 2"
+                    app.root.ids.toolbar.title = "KITE Robotics: Information menu"
+
+                IconLeftWidget:
+                    icon: "information-outline"
+                    on_press:
+                        root.nav_drawer.set_state("close")
+                        root.screen_manager.current = "scr 2"
+                        app.root.ids.toolbar.title = "KITE Robotics: Information menu"
+
+            OneLineIconListItem:
+                text: "Maintenance menu"
+                
+                on_press:
+                    root.nav_drawer.set_state("close")
+                    root.screen_manager.current = "scr 3"
+                    app.root.ids.toolbar.title = "KITE Robotics: Maintenance menu"
+
+                IconLeftWidget:
+                    icon: "tools"
+                    on_press:
+                        root.nav_drawer.set_state("close")
+                        root.screen_manager.current = "scr 3"
+                        app.root.ids.toolbar.title = "KITE Robotics: Maintenance menu"
+
+MDScreen:
+    md_bg_color: app.theme_cls.bg_dark
+    MDToolbar:
+        id: toolbar
+        pos_hint: {"top": 1}
+        md_bg_color: get_color_from_hex("014d98")
+        elevation: 10
+        title: "KITE Robotics: Main menu"
+        left_action_items: [["menu", lambda x: nav_drawer.set_state("open")]]
+        right_action_items: [["play", lambda x: app.startCallback()],["close-octagon", lambda x: app.stopCallback()]]
+
+    MDNavigationLayout:
+        x: toolbar.height
+
+        ScreenManager:
+            id: screen_manager
+
+            MDScreen:
+                name: "scr 1"
+
+                Image:
+                    source: "src/kite_demo_system/kite_gui/resources/KiteLogo.png"
+                    size_hint: (0.2, 0.2)
+                    pos_hint: {"x": 0.85, "top": 0.895}
+
+                MDFloatLayout:
+                    radius: [25, 0, 25, 0]
+                    md_bg_color: get_color_from_hex("9ba0a8")
+                    size_hint: (0.15, 0.10)
+                    pos_hint: {"x": 0.1, "top": 0.85}
+
+                    MDLabel:
+                        text: 'Target X:'
+                        # halign: 'center'
+                        size_hint: 0.75, 0.5
+                        pos_hint: {"x": 0.1, "top": 1}
+
+                    MDLabel:
+                        id: targX
+                        text: '%s' %int(0)
+                        # halign: "center"
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.75, "top": 1}
+
+                    MDLabel:
+                        text: 'Target Z:'
+                        size_hint: 0.75, 0.5
+                        pos_hint: {"x": 0.1, "top": 0.5}
+
+                    MDLabel:
+                        id: targZ
+                        text: '%s' %int(0)
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.75, "top": 0.5}
+
+                MDFloatLayout:
+                    radius: [25, 0, 25, 0]
+                    md_bg_color: get_color_from_hex("9ba0a8")
+                    size_hint: (0.15, 0.10)
+                    pos_hint: {"x": 0.1, "top": 0.70}
+
+                    MDLabel:
+                        text: 'Cur X:'
+                        # halign: 'center'
+                        size_hint: 0.75, 0.5
+                        pos_hint: {"x": 0.1, "top": 1}
+
+                    MDLabel:
+                        id: curX
+                        text: '%s' %int(0)
+                        # halign: "center"
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.75, "top": 1}
+
+                    MDLabel:
+                        text: 'Cur Z:'
+                        size_hint: 0.75, 0.5
+                        pos_hint: {"x": 0.1, "top": 0.5}
+
+                    MDLabel:
+                        id: curZ
+                        text: '%s' %int(0)
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.75, "top": 0.5}
+
+                MDRaisedButton:
+                    text: "Automatic position mode"
+                    md_bg_color: get_color_from_hex("014d98")
+                    size_hint: 0.2, 0.075
+                    pos_hint: {"center_x": 0.5, "center_y": 0.8}
+                    on_press: app.autoPos(*args)
+
+                MDRaisedButton:
+                    text: "Manual position mode"
+                    md_bg_color: get_color_from_hex("014d98")
+                    size_hint: 0.2, 0.075
+                    pos_hint: {"center_x": 0.5, "center_y": 0.7}
+                    radius: [50,]
+                    on_press: app.manualPos(*args)
+
+            MDScreen:
+                name: "scr 2"
+
+                Image:
+                    source: "src/kite_demo_system/kite_gui/resources/KiteLogo.png"
+                    size_hint: (0.2, 0.2)
+                    pos_hint: {"x": 0.85, "top": 0.895}
+
+                MDFloatLayout:
+                    radius: [25, 0, 25, 0]
+                    md_bg_color: get_color_from_hex("9ba0a8")
+                    size_hint: (0.15, 0.10)
+                    pos_hint: {"x": 0.1, "top": 0.85}
+
+                    MDLabel:
+                        text: 'Joystick X:'
+                        # halign: 'center'
+                        size_hint: 0.75, 0.5
+                        pos_hint: {"x": 0.1, "top": 1}
+
+                    MDLabel:
+                        id: joyPosX
+                        text: '%s' %int(0)
+                        # halign: "center"
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.75, "top": 1}
+
+                    MDLabel:
+                        text: 'Joystick Z:'
+                        size_hint: 0.75, 0.5
+                        pos_hint: {"x": 0.1, "top": 0.5}
+
+                    MDLabel:
+                        id: joyPosZ
+                        text: '%s' %int(0)
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.75, "top": 0.5}
+
+
+                MDFloatLayout:
+                    radius: [25, 0, 25, 0]
+                    md_bg_color: get_color_from_hex("9ba0a8")
+                    size_hint: (0.25, 0.10)
+                    pos_hint: {"x": 0.3, "top": 0.85}
+
+                    MDLabel:
+                        text: 'Position Motor 1:'
+                        size_hint: 0.55, 0.5
+                        pos_hint: {"x": 0.05, "top": 1}
+
+                    MDLabel:
+                        id: motorPos_one
+                        text: '%s' %int(0)
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.55, "top": 1}
+
+                    MDLabel:
+                        text: 'Position Motor 2:'
+                        size_hint: 0.55, 0.5
+                        pos_hint: {"x": 0.05, "top": 0.5}
+
+                    MDLabel:
+                        id: motorPos_two
+                        text: '%s' %int(0)
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.55, "top": 0.5}
+
+
+                MDFloatLayout:
+                    radius: [25, 0, 25, 0]
+                    md_bg_color: get_color_from_hex("9ba0a8")
+                    size_hint: (0.25, 0.10)
+                    pos_hint: {"x": 0.6, "top": 0.85}
+
+                    MDLabel:
+                        text: 'Speed Motor 1:'
+                        size_hint: 0.55, 0.5
+                        pos_hint: {"x": 0.05, "top": 1}
+
+                    MDLabel:
+                        id: motorSpeed_one
+                        text: '%s' %int(0)
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.55, "top": 1}
+
+                    MDLabel:
+                        text: 'Speed Motor 2:'
+                        size_hint: 0.55, 0.5
+                        pos_hint: {"x": 0.05, "top": 0.5}
+
+                    MDLabel:
+                        id: motorSpeed_two
+                        text: '%s' %int(0)
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.55, "top": 0.5}
+
+            MDScreen:
+                name: "scr 3"
+
+                Image:
+                    source: "src/kite_demo_system/kite_gui/resources/KiteLogo.png"
+                    size_hint: (0.2, 0.2)
+                    pos_hint: {"x": 0.85, "top": 0.895}
+
+                MDFloatLayout:
+                    radius: [25, 0, 25, 0]
+                    md_bg_color: get_color_from_hex("9ba0a8")
+                    size_hint: (0.15, 0.10)
+                    pos_hint: {"x": 0.1, "top": 0.45}
+
+                    MDLabel:
+                        text: 'Joystick X:'
+                        # halign: 'center'
+                        size_hint: 0.75, 0.5
+                        pos_hint: {"x": 0.1, "top": 1}
+
+                    MDLabel:
+                        id: joyPosX
+                        text: '%s' %int(0)
+                        # halign: "center"
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.75, "top": 1}
+
+                    MDLabel:
+                        text: 'Joystick Z:'
+                        size_hint: 0.75, 0.5
+                        pos_hint: {"x": 0.1, "top": 0.5}
+
+                    MDLabel:
+                        id: joyPosZ
+                        text: '%s' %int(0)
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.75, "top": 0.5}
+
+
+                MDFloatLayout:
+                    radius: [25, 0, 25, 0]
+                    md_bg_color: get_color_from_hex("9ba0a8")
+                    size_hint: (0.25, 0.10)
+                    pos_hint: {"x": 0.3, "top": 0.45}
+
+                    MDLabel:
+                        text: 'Position Motor 1:'
+                        size_hint: 0.55, 0.5
+                        pos_hint: {"x": 0.05, "top": 1}
+
+                    MDLabel:
+                        id: motorPos_one
+                        text: '%s' %int(0)
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.55, "top": 1}
+
+                    MDLabel:
+                        text: 'Position Motor 2:'
+                        size_hint: 0.55, 0.5
+                        pos_hint: {"x": 0.05, "top": 0.5}
+
+                    MDLabel:
+                        id: motorPos_two
+                        text: '%s' %int(0)
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.55, "top": 0.5}
+
+                MDFloatLayout:
+                    radius: [25, 0, 25, 0]
+                    md_bg_color: get_color_from_hex("9ba0a8")
+                    size_hint: (0.25, 0.10)
+                    pos_hint: {"x": 0.6, "top": 0.45}
+
+                    MDLabel:
+                        text: 'Speed Motor 1:'
+                        size_hint: 0.55, 0.5
+                        pos_hint: {"x": 0.05, "top": 1}
+
+                    MDLabel:
+                        id: motorSpeed_one
+                        text: '%s' %int(0)
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.55, "top": 1}
+
+                    MDLabel:
+                        text: 'Speed Motor 2:'
+                        size_hint: 0.55, 0.5
+                        pos_hint: {"x": 0.05, "top": 0.5}
+
+                    MDLabel:
+                        id: motorSpeed_two
+                        text: '%s' %int(0)
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.55, "top": 0.5}
+
+                MDFloatLayout:
+                    radius: [25, 0, 25, 0]
+                    md_bg_color: get_color_from_hex("9ba0a8")
+                    size_hint: (0.15, 0.10)
+                    pos_hint: {"x": 0.1, "top": 0.25}
+
+                    MDLabel:
+                        text: 'Target X:'
+                        # halign: 'center'
+                        size_hint: 0.75, 0.5
+                        pos_hint: {"x": 0.1, "top": 1}
+
+                    MDLabel:
+                        id: targX
+                        text: '%s' %int(0)
+                        # halign: "center"
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.75, "top": 1}
+
+                    MDLabel:
+                        text: 'Target Z:'
+                        size_hint: 0.75, 0.5
+                        pos_hint: {"x": 0.1, "top": 0.5}
+
+                    MDLabel:
+                        id: targZ
+                        text: '%s' %int(0)
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.75, "top": 0.5}
+
+                MDFloatLayout:
+                    radius: [25, 0, 25, 0]
+                    md_bg_color: get_color_from_hex("9ba0a8")
+                    size_hint: (0.15, 0.10)
+                    pos_hint: {"x": 0.3, "top": 0.25}
+
+                    MDLabel:
+                        text: 'Cur X:'
+                        # halign: 'center'
+                        size_hint: 0.75, 0.5
+                        pos_hint: {"x": 0.1, "top": 1}
+
+                    MDLabel:
+                        id: curX
+                        text: '%s' %int(0)
+                        # halign: "center"
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.75, "top": 1}
+
+                    MDLabel:
+                        text: 'Cur Z:'
+                        size_hint: 0.75, 0.5
+                        pos_hint: {"x": 0.1, "top": 0.5}
+
+                    MDLabel:
+                        id: curZ
+                        text: '%s' %int(0)
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.75, "top": 0.5}
+
+                MDRaisedButton:
+                    text: "Control: Motor 1"
+                    md_bg_color: get_color_from_hex("014d98")
+                    size_hint: 0.15, 0.075
+                    pos_hint: {"center_x": 0.1, "center_y": 0.8}
+                    on_press: app.motor1(*args)
+
+                MDRaisedButton:
+                    text: "Control: Motor 2"
+                    md_bg_color: get_color_from_hex("014d98")
+                    size_hint: 0.15, 0.075
+                    pos_hint: {"center_x": 0.3, "center_y": 0.8}
+                    on_press: app.motor2(*args)
+
+                MDRaisedButton:
+                    text: "Set HomePosition"
+                    md_bg_color: get_color_from_hex("014d98")
+                    size_hint: 0.15, 0.075
+                    pos_hint: {"center_x": 0.1, "center_y": 0.7}
+                    on_press: app.homePos(*args)
+
+                MDRaisedButton:
+                    text: "Reset motors"
+                    md_bg_color: get_color_from_hex("014d98")
+                    size_hint: 0.15, 0.075
+                    pos_hint: {"center_x": 0.3, "center_y": 0.7}
+                    on_press: app.resetMotor(*args)
+
+                MDRaisedButton:
+                    text: "Automatic position mode"
+                    md_bg_color: get_color_from_hex("014d98")
+                    size_hint: 0.2, 0.075
+                    pos_hint: {"center_x": 0.5, "center_y": 0.8}
+                    on_press: app.autoPos(*args)
+
+                MDRaisedButton:
+                    text: "Manual position mode"
+                    md_bg_color: get_color_from_hex("014d98")
+                    size_hint: 0.2, 0.075
+                    pos_hint: {"center_x": 0.5, "center_y": 0.7}
+                    radius: [50,]
+                    on_press: app.manualPos(*args)
+
+        MDNavigationDrawer:
+            id: nav_drawer
+
+            ContentNavigationDrawer:
+                screen_manager: screen_manager
+                nav_drawer: nav_drawer

@@ -1,0 +1,2 @@
+kite_demo_system/kite_gui:kite_demo_system/kite_joystick_teleop:kite_demo_system/kite_navigation:kite_demo_system/kite_position:kite_demo_system/teleop_twist_keyboard_cpp
+-DCATKIN_DEVEL_PREFIX=/home/ubuntu/Desktop/KITE_demo_system/devel -DCMAKE_INSTALL_PREFIX=/home/ubuntu/Desktop/KITE_demo_system/install -G Unix Makefiles

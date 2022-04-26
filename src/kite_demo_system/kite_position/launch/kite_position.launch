@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="kite_position" type="kite_position" name="kite_position_node" output="screen"></node>
+</launch>

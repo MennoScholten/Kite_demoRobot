@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="kite_joystick_teleop" type="kite_joystick_teleop.py" name="kite_joystick_teleop" output="screen"></node>
+</launch>

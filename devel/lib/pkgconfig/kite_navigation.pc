@@ -1,0 +1,8 @@
+prefix=/home/ubuntu/Desktop/KITE_demo_system/devel
+
+Name: kite_navigation
+Description: Description of kite_navigation
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

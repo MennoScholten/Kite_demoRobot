@@ -1,0 +1,98 @@
+FloatLayout:
+    MDLabel:
+        text: "Hello KITE"
+        halign: "center"
+        size_hint: 1, 1
+        pos_hint: {"center_x": .1, "center_y": 0.9}
+
+    MDLabel:
+        id: pos_label
+        text: 'Motor Position 1: %s' 
+        halign: "center"
+        size_hint: 1, 1
+        pos_hint: {"center_x": .1, "center_y": 0.8}
+        
+    MDRaisedButton:
+        text: "Control: Motor 1"
+        md_bg_color: 1, 0, 0, 1
+        size_hint: 0.2, 0.1
+        pos_hint: {"center_x": .5, "center_y": .5}
+        on_press: app.motor1(*args)
+
+    MDRaisedButton:
+        text: "Control: Motor 2"
+        md_bg_color: 1, 0, 0, 1
+        size_hint: 0.2, 0.1
+        pos_hint: {"center_x": .8, "center_y": .5}
+        on_press: app.motor2(*args)
+
+MDNavigationLayout:
+    ScreenManager:
+        Screen_1:
+
+        Screen_2:
+
+    MDNavigationDrawer:
+
+        ContentNavigationDrawer:
+
+
+MDFloatLayout:
+                    radius: [25, 0, 25, 0]
+                    md_bg_color: get_color_from_hex("9ba0a8")
+                    size_hint: (0.15, 0.10)
+                    pos_hint: {"x": 0.1, "top": 0.85}
+
+                    MDLabel:
+                        text: 'Target X:'
+                        # halign: 'center'
+                        size_hint: 0.75, 0.5
+                        pos_hint: {"x": 0.1, "top": 1}
+
+                    MDLabel:
+                        id: targX
+                        text: '%s' %int(0)
+                        # halign: "center"
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.75, "top": 1}
+
+                    MDLabel:
+                        text: 'Target Z:'
+                        size_hint: 0.75, 0.5
+                        pos_hint: {"x": 0.1, "top": 0.5}
+
+                    MDLabel:
+                        id: targZ
+                        text: '%s' %int(0)
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.75, "top": 0.5}
+
+                MDFloatLayout:
+                    radius: [25, 0, 25, 0]
+                    md_bg_color: get_color_from_hex("9ba0a8")
+                    size_hint: (0.15, 0.10)
+                    pos_hint: {"x": 0.1, "top": 0.85}
+
+                    MDLabel:
+                        text: 'Cur X:'
+                        # halign: 'center'
+                        size_hint: 0.75, 0.5
+                        pos_hint: {"x": 0.1, "top": 1}
+
+                    MDLabel:
+                        id: curX
+                        text: '%s' %int(0)
+                        # halign: "center"
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.75, "top": 1}
+
+                    MDLabel:
+                        text: 'Cur Z:'
+                        size_hint: 0.75, 0.5
+                        pos_hint: {"x": 0.1, "top": 0.5}
+
+                    MDLabel:
+                        id: curZ
+                        text: '%s' %int(0)
+                        size_hint: 0.25, 0.5
+                        pos_hint: {"x": 0.75, "top": 0.5}
