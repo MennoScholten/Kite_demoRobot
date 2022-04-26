@@ -1,3 +1,11 @@
+# ROSNODE 3 Joystick TELEOP 
+# KITE ROBOTICS EXHIBITION STAND: DEMONSTRATION SYSTEM
+# Created on: 01-04-2022
+# Version 1.1
+# 
+# Program designed by: Menno Scholten
+
+
 import rospy
 
 from smbus2 import SMBus

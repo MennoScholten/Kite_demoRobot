@@ -1,5 +1,5 @@
 # ROSNODE 1 HMI_controller 
-# KITE ROBOTICS EXHIBITION STAND: DEMONSTATION SYSTEM
+# KITE ROBOTICS EXHIBITION STAND: DEMONSTRATION SYSTEM
 # Created on: 25-04-2022
 # Version 1.0
 # 
@@ -28,7 +28,7 @@ joymsg = Twist()
 motormsg = Twist()
 navimsg = Twist()
 
-
+linRes = 0.184
 
 class ContentNavigationDrawer(MDBoxLayout):
     screen_manager = ObjectProperty()
@@ -72,8 +72,8 @@ class GuiApp(MDApp):
         motormsg.linear.x = data.linear.x
         motormsg.linear.z = data.linear.z
 
-        l1 = data.linear.x * 0.15 + 2155.2262062252
-        l2 = data.linear.z * 0.15 + 2593.2260495977
+        l1 = data.linear.x * linRes + 2155.2262062252
+        l2 = data.linear.z * linRes + 2593.2260495977
 
         motormsg.angular.x = data.angular.x
         motormsg.angular.y = data.angular.y
@@ -175,21 +175,15 @@ class GuiApp(MDApp):
         self.dialogClose.open()
 
     def startProgram(self, obj):
-        os.system("rosrun rosserial_python serial_node.py /dev/ttyACM0")
+        # os.system("rosrun rosserial_python serial_node.py /dev/ttyACM0")
         time.sleep(1)
-        os.system("rosrun kite_postion position_node")
-        time.sleep(1)
-        os.system("rosrun kite_joystick_teleop kite_joystick_teleop.py")
-        time.sleep(1)
-        os.system("rosrun kite_navigation kite_navigation")
-        time.sleep(10)
         self.close_startDialog
 
     def stopProgram(self, obj):
         msg = 0
         pub.publish(msg)
         self.dialogClose.dismiss()
-        time.sleep(8)
+        time.sleep(1)
         self.stop()
 
     def close_startDialog(self, obj):

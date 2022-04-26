@@ -1,3 +1,11 @@
+// ROSNODE 4 Navigation controller
+// KITE ROBOTICS EXHIBITION STAND: DEMONSTRATION SYSTEM
+// Created on: 28-03-2022
+// Version 1.0
+
+// Program designed by: Menno Scholten
+
+
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
 #include <std_msgs/Bool.h>
