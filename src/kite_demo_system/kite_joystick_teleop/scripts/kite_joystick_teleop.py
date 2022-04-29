@@ -28,8 +28,8 @@ config2 = [0xC2, 0xB3]
 
 deadzoneX = 0.1 #Joystick deadzone value (X-AXIS) 
 deadzoneZ = 0.1 #Joystick deadzone value (Z-AXIS) 
-X_rev = -1   # Change to -1 to reverse axis
-Z_rev = 1   # CHange to -1 to reverse axis
+X_rev = 1   # Change to -1 to reverse axis
+Z_rev = -1   # CHange to -1 to reverse axis
 
 msg = Twist()
 

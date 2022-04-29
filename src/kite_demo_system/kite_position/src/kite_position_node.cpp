@@ -214,21 +214,11 @@ int main(int argc, char** argv)
 
             // FORWARD KINEMATICS (calculate position via cable length). 
             // For more information: chapter 2.4.5 -> 220316_TDD_Afstudeerstage_MennoScholten_463048_V1.docx 
-            // double delX = ((l1_sqre - l2_sqre + 1979649) / (2814)) - xOffset;
-            // //double z_sqrtIn = 1 - ((l1_sqre - l2_sqre + 1979649) / (4 * l1_sqre * l1_sqre * 1979649));
-            // //double delZ = 2000 - l1 * sqrt(z_sqrtIn);
+            double delX = ((l1_sqre - l2_sqre + 1979649) / (2814)) - xOffset;
 
-            // double z_cosIn = ((l1_sqre - l2_sqre + 1979649) / (l1 * 2814));
-            // double delZ = 2000 - l1*sin(acos(z_cosIn));
+            double z_cosIn = ((l1_sqre - l2_sqre + 1979649) / (l1 * 2814));
+            double delZ = 2000 - l1*sin(acos(z_cosIn));
 
-            
-
-            double delX = ((l1_sqre - l2_sqre + xMotordist_sqre) / (xMotordist)) - xOffset;
-            //double z_sqrtIn = 1 - ((l1_sqre - l2_sqre + 1979649) / (4 * l1_sqre * l1_sqre * 1979649));
-            //double delZ = 2000 - l1 * sqrt(z_sqrtIn);
-
-            double z_cosIn = ((l1_sqre - l2_sqre + xMotordist_sqre) / (l1 * xMotordist));
-            double delZ = zMotordist - l1*sin(acos(z_cosIn)) - zOffset;
             
             posX = waypointmsg.linear.x;        // Received waypoint position X-axis
             posZ = waypointmsg.linear.z;        // Received waypoint position Z-axis
@@ -289,7 +279,24 @@ int main(int argc, char** argv)
             joyZ = int(joystickmsg.linear.z);           // get joystick Z-axis value
             int stepsM1_old = int(motormsg.linear.x);   // get previous known steps motor 1 (LEFT UP)
             int stepsM2_old = int(motormsg.linear.z);   // get previous known steps motor 2 (RIGHT UP)
-            
+
+            double l1 = stepsM1_old * mmPuls + 2005.6171220131579;  // Calculate length of cable 1 (LEFT UP) via last known steps
+            double l2 = stepsM2_old * mmPuls + 2362.2127338578123;  // Calculate length of cable 1 (RIGHT UP) via last known steps
+
+            double l1_sqre = l1 * l1;   // Variable containing squared length of cable 1 
+            double l2_sqre = l2 * l2;   // Variable containing squared length of cable 2
+
+
+            // FORWARD KINEMATICS (calculate position via cable length). 
+            // For more information: chapter 2.4.5 -> 220316_TDD_Afstudeerstage_MennoScholten_463048_V1.docx 
+            double delX = ((l1_sqre - l2_sqre + 1979649) / (2814)) - xOffset;
+
+            double z_cosIn = ((l1_sqre - l2_sqre + 1979649) / (l1 * 2814));
+            double delZ = 2000 - l1*sin(acos(z_cosIn));
+  
+            curPositionPub.linear.x = delX;     // Forward kinematics publish X-axis
+            curPositionPub.linear.z = delZ;     // Forward kinematics publish Z-axis
+
 
             // Maximum allowed position variables
             if((posX + joyX) >= wsX) {          
@@ -324,7 +331,7 @@ int main(int argc, char** argv)
             steps2 = calcStepAmount(lengthCable2New - lengthCable2);
 
             // calculateds speed with joystick inputs.
-            calcSpeedJoy(joyX, joyZ, speed1, speed2);
+            calcSpeed(steps1 -stepsM1_old, speed1, steps2 -stepsM2_old, speed2, maxSpeed);
 
             // Fill motorcontrol message with calculated variables
             msgs.linear.x = steps1;
@@ -351,6 +358,29 @@ int main(int argc, char** argv)
             posX = 0;
             posZ = 0;
             speed = 500;
+
+            joyX = int(joystickmsg.linear.x);           // get joystick X-axis value 
+            joyZ = int(joystickmsg.linear.z);           // get joystick Z-axis value
+            int stepsM1_old = int(motormsg.linear.x);   // get previous known steps motor 1 (LEFT UP)
+            int stepsM2_old = int(motormsg.linear.z);   // get previous known steps motor 2 (RIGHT UP)
+
+            double l1 = stepsM1_old * mmPuls + 2005.6171220131579;  // Calculate length of cable 1 (LEFT UP) via last known steps
+            double l2 = stepsM2_old * mmPuls + 2362.2127338578123;  // Calculate length of cable 1 (RIGHT UP) via last known steps
+
+            double l1_sqre = l1 * l1;   // Variable containing squared length of cable 1 
+            double l2_sqre = l2 * l2;   // Variable containing squared length of cable 2
+
+
+            // FORWARD KINEMATICS (calculate position via cable length). 
+            // For more information: chapter 2.4.5 -> 220316_TDD_Afstudeerstage_MennoScholten_463048_V1.docx 
+            double delX = ((l1_sqre - l2_sqre + 1979649) / (2814)) - xOffset;
+
+            double z_cosIn = ((l1_sqre - l2_sqre + 1979649) / (l1 * 2814));
+            double delZ = 2000 - l1*sin(acos(z_cosIn));
+            
+            curPositionPub.linear.x = delX;     // Forward kinematics publish X-axis
+            curPositionPub.linear.z = delZ;     // Forward kinematics publish Z-axis
+
             
             double lengthCable1New = calcLength((xOffset + posX), (wsZ + zOffset) - posZ);
             double lengthCable2New = calcLength(((wsX + xOffset) - posX), ((wsZ + zOffset) - posZ));
