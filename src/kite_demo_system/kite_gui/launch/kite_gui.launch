@@ -1,0 +1,10 @@
+<launch>
+    <node pkg="rosserial_python" type="serial_node.py" name="rosserial_node" output="screen">
+        <param name="port" value="/dev/ttyACM0"/>
+        <param name="baud" value="57600"/>    
+    </node>
+    <node pkg="kite_joystick_teleop" type="kite_joystick_teleop.py" name="kite_joystick_teleop_node" output="screen"></node>
+    <node pkg="kite_navigation" type="kite_navigation" name="kite_navigation_node" output="screen"></node>
+    <node pkg="kite_position" type="position_node" name="kite_position_node" output="screen"></node>
+    <node pkg="kite_gui" type="kite_gui.py" name="kite_HMI_node" output="screen"></node>
+</launch>

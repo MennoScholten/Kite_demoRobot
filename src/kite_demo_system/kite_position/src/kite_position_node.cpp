@@ -1,14 +1,23 @@
+// ROSNODE 5 Position controller
+// KITE ROBOTICS EXHIBITION STAND: DEMONSTRATION SYSTEM
+// Created on: 29-03-2022
+// Version 1.1
+
+// Program designed by: Menno Scholten
+
 #include <ros/ros.h>
+#include <ros/console.h>
+#include <math.h>
 #include <geometry_msgs/Twist.h>
 #include <std_msgs/UInt16.h>
 #include <std_msgs/Bool.h>
 
-#define wsX 1100                        // Workspace distance X-axis (mm)
+#define wsX 1107                        // Workspace distance X-axis (mm)
 //#define wsZ 2000                        // Workspace distance Z-axis (mm)
 //#define wsX 1300
 #define wsZ 1900
 #define xOffset 150                     // Offset from workspace to cablepoint X-axis (mm)
-#define zOffset 150                     // Offset from workspace to cablepoint Z-axis (mm)
+#define zOffset 100                     // Offset from workspace to cablepoint Z-axis (mm)
 #define xMotordist wsX + 2 * xOffset    // Distance between cablepoints X-axis (mm)
 #define zMotordist wsZ + 2 * zOffset    // Distacne between cablepoints Z-axis (mm)
 
@@ -18,7 +27,7 @@
 #define stepdegree 0.05                 // Angle of rotation per step
 #define pulsRev (360 / stepdegree)        // Amount of step pulses needed per revolution
 //#define mmPuls (mmRev / pulsRev)          // mm of cable movement per step
-#define mmPuls 0.184
+#define mmPuls 0.182
 //#define mmPuls 2
 
 //#define maxSpeed 2000                  // Maximum speed of the motors in pulses/second
@@ -31,10 +40,12 @@ unsigned int modePointer = 0;
 geometry_msgs::Twist waypointmsg;
 geometry_msgs::Twist joystickmsg;
 geometry_msgs::Twist motormsg;
+geometry_msgs::Twist curPositionPub;
 
 void subWaypointCallback(const geometry_msgs::Twist::ConstPtr& msg) {
     waypointmsg.linear.x = msg->linear.x;
-    waypointmsg.linear.z = msg->linear.z;   
+    waypointmsg.linear.z = msg->linear.z;  
+    waypointmsg.linear.y = msg->linear.y; 
 }
 
 void subJoystickCallback(const geometry_msgs::Twist::ConstPtr& msg) {
@@ -55,7 +66,7 @@ void subMotorPositionCallback(const geometry_msgs::Twist::ConstPtr& msg) {
 
 double calcLength(int x, int z);
 
-void calcSpeed(double len1, float &speed1, double len2, float &speed2);
+void calcSpeed(double len1, float &speed1, double len2, float &speed2, int Maxspeed);
 
 void calcSpeedJoy(int joyx, int joyz, float& speed1, float& speed2);
 
@@ -77,17 +88,21 @@ int main(int argc, char** argv)
     double steps2 = 0.0;
     float speed1 = 0.0;
     float speed2 = 0.0;
+    int speed = 0;
     int i = 0;
 
-    const double lengthCable1 = calcLength(xOffset, wsZ + zOffset);         // Length calbe 1 (UP LEFT) at rest [0, 0]
-    const double lengthCable2 = calcLength(wsX + xOffset, wsZ + zOffset);   // Length cable 2 (UP RIGHT) at rest [0, 0]
+    double xMotordist_sqre = xMotordist * xMotordist;
+
+    const double lengthCable1 = calcLength(xOffset, 2000);         // Length calbe 1 (UP LEFT) at rest [0, 0]
+    const double lengthCable2 = calcLength(wsX + xOffset, 2000);   // Length cable 2 (UP RIGHT) at rest [0, 0]
     // Init ROS node
     ros::init(argc, argv, "kite_position_node"); 
     ros::NodeHandle nh;
-    ros::Rate r(30);        // 10 Hz spinrate
+    ros::Rate r(30);        // 30 Hz spinrate
   
     ros::Publisher motorPub = nh.advertise<geometry_msgs::Twist>("motor_control", 100);
     ros::Publisher waypointPub = nh.advertise<std_msgs::Bool>("nextWaypoint", 100);
+    ros::Publisher curposPub = nh.advertise<geometry_msgs::Twist>("cur_position", 100);
 
     ros::Subscriber subWaypoint = nh.subscribe("navigation_position", 1000, subWaypointCallback);
     ros::Subscriber subJoystick = nh.subscribe("joystick_teleop", 1000, subJoystickCallback);
@@ -179,8 +194,14 @@ int main(int argc, char** argv)
 
         else if (modePointer == 3 && int(motormsg.angular.y) == 0) {
             // Mode 3 set current position as "HOME" position
-            msgs.linear.x = motormsg.linear.x;
-            msgs.linear.z = motormsg.linear.z;
+            joyX = 0;
+            joyZ = 0;
+            posX = 0;
+            posZ = 0;
+            curX = 0;
+            curZ = 0;
+            msgs.linear.x = 0;
+            msgs.linear.z = 0;
             msgs.angular.x = 0;
             msgs.angular.z = 0;
             msgs.angular.y = -250;
@@ -193,44 +214,60 @@ int main(int argc, char** argv)
             int stepsM1_old = int(motormsg.linear.x);
             int stepsM2_old = int(motormsg.linear.z);
 
+            double l1 = stepsM1_old * mmPuls + 2005.6171220131579;
+            double l2 = stepsM2_old * mmPuls + 2362.2127338578123;
+
+            double l1_sqre = l1 * l1;
+            double l2_sqre = l2 * l2;
+
+            double delX = ((l1_sqre - l2_sqre + 1979649) / (2814)) - xOffset;
+            //double z_sqrtIn = 1 - ((l1_sqre - l2_sqre + 1979649) / (4 * l1_sqre * l1_sqre * 1979649));
+            //double delZ = 2000 - l1 * sqrt(z_sqrtIn);
+
+            double z_cosIn = ((l1_sqre - l2_sqre + 1979649) / (l1 * 2814));
+            double delZ = 2000 - l1*sin(acos(z_cosIn));
+            
             posX = waypointmsg.linear.x;
             posZ = waypointmsg.linear.z;
-
-            double lengthCable1New = calcLength(xOffset + posX, (wsZ + zOffset) - posZ);
-            double lengthCable2New = calcLength((wsX + xOffset) - posX, (wsZ + zOffset) - posZ);
+            speed = waypointmsg.linear.y;
+            curPositionPub.linear.x = delX;
+            curPositionPub.linear.z = delZ;
+            
+            double lengthCable1New = calcLength((xOffset + posX), (wsZ + zOffset) - posZ);
+            double lengthCable2New = calcLength(((wsX + xOffset) - posX), ((wsZ + zOffset) - posZ));
 
             steps1 = calcStepAmount(lengthCable1New - lengthCable1);
             steps2 = calcStepAmount(lengthCable2New - lengthCable2);
 
-            calcSpeed((steps1 - stepsM1_old), speed1, (steps2 - stepsM2_old), speed2);
+            double absSteps1 = steps1 - stepsM1_old;
+            double absSteps2 = steps2 - stepsM2_old;
+
+            calcSpeed(absSteps1, speed1, absSteps2, speed2, speed);
             msgs.linear.x = steps1;
             msgs.linear.z = steps2;
             msgs.angular.x = speed1;
             msgs.angular.z = speed2;
             msgs.angular.y = 0;
 
-            if(stepsM1_old == steps1 && stepsM2_old == steps2 && singleShot != true) {
+            if((abs(absSteps1) <= 100 && abs(absSteps2) <= 100) && singleShot != true) {
                 getNewPos.data = true;
-                singleShot = true;
+                waypointPub.publish(getNewPos);
                 i = 0;
-                
+                singleShot = true;
             }
-            else if((stepsM1_old != steps1 && stepsM2_old != steps2) || singleShot == true){
-                getNewPos.data = false;
-                
-                if(i >= 2 && singleShot == true){
-                    singleShot = false;
-                    /*
-                    calcSpeed((steps1 - stepsM1_old), speed1, (steps2 - stepsM2_old), speed2);
-                    msgs.linear.x = steps1;
-                    msgs.linear.z = steps2;
-                    msgs.angular.x = speed1;
-                    msgs.angular.z = speed2;
-                    msgs.angular.y = 0;
-                    */
-                }        
+            else if((stepsM1_old != steps1 || stepsM2_old != steps2) && singleShot == true){
                 i += 1;
+                if(i <= 3) {
+                    getNewPos.data = false;
+                    waypointPub.publish(getNewPos);
+                }  
+                else if(i >= 4 && singleShot == true){
+                    singleShot = false;
+                    i = 0;
+                }       
+                
             }
+            
         }
 
         else if (modePointer == 5 && int(motormsg.angular.y) == 0) {
@@ -243,30 +280,7 @@ int main(int argc, char** argv)
 
             double lenCableM1 = stepsM1_old * mmPuls + lengthCable1;
             double lenCableM2 = stepsM2_old * mmPuls + lengthCable2;
-
-            if(joyX > 0) {
-                    
-                posX = wsX;
-            }
-            else if(joyX < 0) {
-                posX = 0;
-            }
-            else if(joyX == 0) {
-                posX = motormsg.linear.x;
-            }
-
-            if(joyZ > 0) {
-                    
-                curX = 200000;
-            }
-            else if(joyZ < 0) {
-                curX = -200000;
-            }
-            else if(joyZ == 0) {
-                curX = motormsg.linear.z;
-            }
-
-            /*
+            
             if((posX + joyX) >= wsX) {
                     
                 posX = wsX;
@@ -288,16 +302,6 @@ int main(int argc, char** argv)
             else {
                 posZ += joyZ / 10;
             }
-            */
-            /*
-            else if(joyZ == 0) {
-                //posZ = zMotordist - lenCableM1 * sqrt( 1 - (pow(lenCableM2, 2.0) - pow(lenCableM1, 2.0) - pow(xMotordist, 2.0)) / (xMotordist * 2 * lenCableM1)) - zOffset;  
-            }*/
-
-            /*
-            speed1 = 200 * abs(joyX);
-            speed2 = 200 * abs(joyZ);
-            */
 
             double lengthCable1New = calcLength(xOffset + posX, (wsZ + zOffset) - posZ);
             double lengthCable2New = calcLength((wsX + xOffset) - posX, (wsZ + zOffset) - posZ);
@@ -325,9 +329,37 @@ int main(int argc, char** argv)
             msgs.angular.y = -666.0;
 
         }
+        else if (modePointer == 7 && int(motormsg.angular.y) == 0) {
+            // Mode 7: Go To Home position handler.
+
+            posX = 0;
+            posZ = 0;
+            speed = 500;
+            
+            double lengthCable1New = calcLength((xOffset + posX), (wsZ + zOffset) - posZ);
+            double lengthCable2New = calcLength(((wsX + xOffset) - posX), ((wsZ + zOffset) - posZ));
+
+            steps1 = calcStepAmount(lengthCable1New - lengthCable1);
+            steps2 = calcStepAmount(lengthCable2New - lengthCable2);
+
+            calcSpeed(steps1, speed1, steps2, speed2, speed);
+            msgs.linear.x = steps1;
+            msgs.linear.z = steps2;
+            msgs.angular.x = speed1;
+            msgs.angular.z = speed2;
+            msgs.angular.y = 0;
+
+        }
         else if (int(motormsg.angular.y) != 0) {
             msgs.linear.x = motormsg.linear.x;
             msgs.linear.z = motormsg.linear.z;
+
+            joyX = 0;
+            joyZ = 0;
+            posX = 0;
+            posZ = 0;
+            curX = 0;
+            curZ = 0;
 
             msgs.angular.x = 0;
             msgs.angular.z = 0;
@@ -336,7 +368,7 @@ int main(int argc, char** argv)
 
         // Publish it and resolve any remaining callbacks
         motorPub.publish(msgs);
-        waypointPub.publish(getNewPos);
+        curposPub.publish(curPositionPub);
         ros::spinOnce();
         r.sleep();
     }
@@ -347,22 +379,22 @@ double calcLength(int x, int z) {
     return(sqrt(pow(x, 2.0) + pow(z, 2.0)));
 }
 
-void calcSpeed(double len1, float& speed1, double len2, float& speed2) {
+void calcSpeed(double len1, float& speed1, double len2, float& speed2, int Maxspeed) {
     float time = 0.0;
 
     if(abs(len1) < abs(len2)) {
-        time = abs(len2 / maxSpeed);
+        time = abs(len2 / Maxspeed);
         speed1 = abs(len1 / time);
-        speed2 = maxSpeed;
+        speed2 = Maxspeed;
     }
     else if(abs(len1) > abs(len2)){
-        time = abs(len1 / maxSpeed);
-        speed1 = maxSpeed;
+        time = abs(len1 / Maxspeed);
+        speed1 = Maxspeed;
         speed2 = abs(len2 / time);
     }
     else {
-        speed1 = maxSpeed;
-        speed2 = maxSpeed;
+        speed1 = Maxspeed;
+        speed2 = Maxspeed;
     }
 }
 
