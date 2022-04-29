@@ -13,93 +13,80 @@
 #include <std_msgs/Bool.h>
 
 #define wsX 1107                        // Workspace distance X-axis (mm)
-//#define wsZ 2000                        // Workspace distance Z-axis (mm)
-//#define wsX 1300
-#define wsZ 1900
+#define wsZ 1900                        // Workspace distance Z-axis (mm)
 #define xOffset 150                     // Offset from workspace to cablepoint X-axis (mm)
 #define zOffset 100                     // Offset from workspace to cablepoint Z-axis (mm)
 #define xMotordist wsX + 2 * xOffset    // Distance between cablepoints X-axis (mm)
 #define zMotordist wsZ + 2 * zOffset    // Distacne between cablepoints Z-axis (mm)
 
-#define linSpeed 0.5                    // Maximum linear speed of system (M/s) (movement on one axis)
-//#define mmRev 130                       // mm of cable movement per revolution of cable reel 
-#define mmRev 100                       // mm of cable movement per revolution of cable reel 
-#define stepdegree 0.05                 // Angle of rotation per step
-#define pulsRev (360 / stepdegree)        // Amount of step pulses needed per revolution
-//#define mmPuls (mmRev / pulsRev)          // mm of cable movement per step
 #define mmPuls 0.182
-//#define mmPuls 2
 
-//#define maxSpeed 2000                  // Maximum speed of the motors in pulses/second
 #define maxSpeed 500                  // Maximum speed of the motors in pulses/second
-//#define maxSpeed 150
 
-std_msgs::Bool getNewPos;
-unsigned int modePointer = 0;
 
-geometry_msgs::Twist waypointmsg;
-geometry_msgs::Twist joystickmsg;
-geometry_msgs::Twist motormsg;
-geometry_msgs::Twist curPositionPub;
+unsigned int modePointer = 0;       // Global variable for system modes
+geometry_msgs::Twist waypointmsg;       // Global variable for receiving new waypoint messages
+geometry_msgs::Twist joystickmsg;       // Global variable for receiving joystick messages
+geometry_msgs::Twist motormsg;          // Global variable for receiving motor position 
+ 
 
-void subWaypointCallback(const geometry_msgs::Twist::ConstPtr& msg) {
+void subWaypointCallback(const geometry_msgs::Twist::ConstPtr& msg) {   // callback handler for getting waypoint messages 
     waypointmsg.linear.x = msg->linear.x;
     waypointmsg.linear.z = msg->linear.z;  
     waypointmsg.linear.y = msg->linear.y; 
 }
 
-void subJoystickCallback(const geometry_msgs::Twist::ConstPtr& msg) {
+void subJoystickCallback(const geometry_msgs::Twist::ConstPtr& msg) {   // callback handler for getting joystick messages
     joystickmsg.linear.x = msg->linear.x;
     joystickmsg.linear.z = msg->linear.z;
 
 }
 
-void subModeCallback(const std_msgs::UInt16::ConstPtr& msg) {
-    modePointer = msg->data;   
+void subModeCallback(const std_msgs::UInt16::ConstPtr& msg) {           // callback handler for getting system mode messages
+    modePointer = msg->data;            
 }
 
-void subMotorPositionCallback(const geometry_msgs::Twist::ConstPtr& msg) {
+void subMotorPositionCallback(const geometry_msgs::Twist::ConstPtr& msg) {  // callback handler for getting motor position messages
     motormsg.linear.x = msg->linear.x;
     motormsg.linear.z = msg->linear.z;
 
 }
 
-double calcLength(int x, int z);
+double calcLength(int x, int z);            // Calculate pythagoras theorom length of hypotenuse (a^2 + b^ 2 = C^2)
 
-void calcSpeed(double len1, float &speed1, double len2, float &speed2, int Maxspeed);
+void calcSpeed(double len1, float &speed1, double len2, float &speed2, int Maxspeed);   // Calculate speed of both moters via linear interpolation
 
-void calcSpeedJoy(int joyx, int joyz, float& speed1, float& speed2);
+void calcSpeedJoy(int joyx, int joyz, float& speed1, float& speed2);            // Calculate speed of both motores via linear interpolation using joystick input as speed
 
-
-int calcStepAmount(double value);
-
+int calcStepAmount(double value);   // Calculate amount of servomotor steps from distance
 
 
 int main(int argc, char** argv)
 {   
-    bool singleShot = false;
-    int joyX = 0;
-    int joyZ = 0;
-    int posX = 0;
-    int posZ = 0;
-    int curX = 0;
-    int curZ = 0;
-    double steps1 = 0.0;
-    double steps2 = 0.0;
-    float speed1 = 0.0;
-    float speed2 = 0.0;
-    int speed = 0;
-    int i = 0;
+    bool singleShot = false;        // Variable used to restrict the amount of requests
+    int joyX = 0;                   // Variable for joystick X-axis input
+    int joyZ = 0;                   // Variable for joystick Z-axis input
+    int posX = 0;                   // variable for desired position X-axis
+    int posZ = 0;                   // Variable for desired position Z-axis
+    int curX = 0;                   // Variable for current position X-axis
+    int curZ = 0;                   // Variable for current position Z-axis
+    double steps1 = 0.0;            // Variable for amount of steps motor 1
+    double steps2 = 0.0;            // Variable for amount of steps motor 2
+    float speed1 = 0.0;             // Variable for speed (steps/sec) of motor 1
+    float speed2 = 0.0;             // Variable for speed (steps/sec) of motor 2
+    int speed = 0;                  // Variable for setting maximum speed
+    int i = 0;                      // Integer counter for restricting amount of requests
 
-    double xMotordist_sqre = xMotordist * xMotordist;
+    double xMotordist_sqre = xMotordist * xMotordist;   // Variable used for kinematics
 
-    const double lengthCable1 = calcLength(xOffset, 2000);         // Length calbe 1 (UP LEFT) at rest [0, 0]
-    const double lengthCable2 = calcLength(wsX + xOffset, 2000);   // Length cable 2 (UP RIGHT) at rest [0, 0]
-    // Init ROS node
-    ros::init(argc, argv, "kite_position_node"); 
-    ros::NodeHandle nh;
+    const double lengthCable1 = calcLength(xOffset, 2000);         // Length calbe 1 (motor system UP LEFT) at rest [0, 0]
+    const double lengthCable2 = calcLength(wsX + xOffset, 2000);   // Length cable 2 (motor system UP RIGHT) at rest [0, 0]
+    
+    ros::init(argc, argv, "kite_position_node"); // Initializing the ROS node
+    ros::NodeHandle nh;     // Setup the ROSNODE handler
     ros::Rate r(30);        // 30 Hz spinrate
   
+    // Setup different ROS subsribers and publishers 
     ros::Publisher motorPub = nh.advertise<geometry_msgs::Twist>("motor_control", 100);
     ros::Publisher waypointPub = nh.advertise<std_msgs::Bool>("nextWaypoint", 100);
     ros::Publisher curposPub = nh.advertise<geometry_msgs::Twist>("cur_position", 100);
@@ -109,46 +96,47 @@ int main(int argc, char** argv)
     ros::Subscriber subMode     = nh.subscribe("system_Mode", 1000, subModeCallback);
     ros::Subscriber subMotorpos = nh.subscribe("motor_Position", 1000, subMotorPositionCallback);
 
-    // Create Twist message
-    geometry_msgs::Twist msgs;
+    geometry_msgs::Twist msgs;              // Variable for publishing desired motor position
+    geometry_msgs::Twist curPositionPub;    // Variable for publishing current motor position messages  
+    std_msgs::Bool getNewPos;               // Variable for publishing new navigation position messages
 
-    
     while(ros::ok()) {
         
         if(modePointer == 0) {
-            // Mode 0 Start pointer no Function
+            // Mode 0 Start pointer NO Function
 
         }
 
         else if(modePointer == 1 && int(motormsg.angular.y) == 0) {
             // Mode 1 Single motorcontrol via joystick (motor 1)
-            joyX = int(joystickmsg.linear.z);
+            joyX = int(joystickmsg.linear.z); // get current joystick position
 
-            if(joyX > 0) {
+            if(joyX > 0) {                  // sets maximum positive position (mm)
                     
                 curX = 200000;
             }
-            else if(joyX < 0) {
+            else if(joyX < 0) {             // sets maximum negative position (mm)
                 curX = -200000;
             }
             else if(joyX == 0) {
-                curX = motormsg.linear.z;
+                curX = motormsg.linear.z;   // sets current position in steps
             }
             
-            int steps = calcStepAmount(curX);
-            unsigned int speed = 0;     
+            int steps = calcStepAmount(curX);   // calculates desired steps
+            speed = 0;                          // sets maximum speed variable to 0 
 
             if(joyX > 0) {
-                speed = 20 * joyX;
+                speed = 20 * joyX;          // sets maximum speed acording to amount of joystick movement
             }
 
             else if(joyX < 0) {
-                speed = -(20 * joyX);
+                speed = -(20 * joyX);       // sets maximum speed acording to amount of joystick movement
             }
             else {
-                speed = 0;
+                speed = 0;                  // sets maximum speed acording to amount of joystick movement
             }
 
+            // Fill motorcontrol message with calculated variables
             msgs.linear.x = steps;
             msgs.linear.z = motormsg.linear.z;
             msgs.angular.x = speed;
@@ -158,33 +146,34 @@ int main(int argc, char** argv)
         
         else if (modePointer == 2 && int(motormsg.angular.y) == 0) {
             // Mode 2 Single motorcontrol via joystick (motor 2)
-            joyZ = int(joystickmsg.linear.z);
+            joyZ = int(joystickmsg.linear.z);   // get current joystick position
 
-            if(joyZ > 0) {
+            if(joyZ > 0) {              // sets maximum positive position (mm)
                     
                 curX = 200000;
             }
-            else if(joyZ < 0) {
+            else if(joyZ < 0) {         // sets maximum negative position (mm)
                 curX = -200000;
             }
-            else if(joyZ == 0) {
+            else if(joyZ == 0) {        // sets current position in steps
                 curX = motormsg.linear.z;
             }
             
-            int steps = calcStepAmount(curX);
-            unsigned int speed = 0;     
+            int steps = calcStepAmount(curX);   // calculates desired steps
+            speed = 0;                          // sets maximum speed variable to 0          
 
-            if(joyZ > 0) {
-                speed = 20 * joyZ;
+            if(joyZ > 0) {                  
+                speed = 20 * joyZ;          // sets maximum speed acording to amount of joystick movement
             }
 
             else if(joyZ < 0) {
-                speed = -(20 * joyZ);
+                speed = -(20 * joyZ);       // sets maximum speed acording to amount of joystick movement
             }
             else {
-                speed = 0;
+                speed = 0;                  // sets maximum speed acording to amount of joystick movement
             }
 
+            // Fill motorcontrol message with calculated variables
             msgs.linear.x = motormsg.linear.x;
             msgs.linear.z = steps;
             msgs.angular.x = 0;
@@ -194,6 +183,8 @@ int main(int argc, char** argv)
 
         else if (modePointer == 3 && int(motormsg.angular.y) == 0) {
             // Mode 3 set current position as "HOME" position
+
+            // Set all variables to 0 (no movement at position [0,0] (x,z))
             joyX = 0;
             joyZ = 0;
             posX = 0;
@@ -204,63 +195,84 @@ int main(int argc, char** argv)
             msgs.linear.z = 0;
             msgs.angular.x = 0;
             msgs.angular.z = 0;
-            msgs.angular.y = -250;
+            msgs.angular.y = -250; // Home variable picked-up by arduino 
 
         }
 
         else if (modePointer == 4 && int(motormsg.angular.y) == 0) {
             // Mode 4 Normal control via waypoints
 
-            int stepsM1_old = int(motormsg.linear.x);
-            int stepsM2_old = int(motormsg.linear.z);
+            int stepsM1_old = int(motormsg.linear.x);   // Get last known steps of motor 1 (LEFT UP)
+            int stepsM2_old = int(motormsg.linear.z);   // get last known steps of motor 2 (RIGHT UP)
 
-            double l1 = stepsM1_old * mmPuls + 2005.6171220131579;
-            double l2 = stepsM2_old * mmPuls + 2362.2127338578123;
+            double l1 = stepsM1_old * mmPuls + 2005.6171220131579;  // Calculate length of cable 1 (LEFT UP) via last known steps
+            double l2 = stepsM2_old * mmPuls + 2362.2127338578123;  // Calculate length of cable 1 (RIGHT UP) via last known steps
 
-            double l1_sqre = l1 * l1;
-            double l2_sqre = l2 * l2;
+            double l1_sqre = l1 * l1;   // Variable containing squared length of cable 1 
+            double l2_sqre = l2 * l2;   // Variable containing squared length of cable 2
 
-            double delX = ((l1_sqre - l2_sqre + 1979649) / (2814)) - xOffset;
+
+            // FORWARD KINEMATICS (calculate position via cable length). 
+            // For more information: chapter 2.4.5 -> 220316_TDD_Afstudeerstage_MennoScholten_463048_V1.docx 
+            // double delX = ((l1_sqre - l2_sqre + 1979649) / (2814)) - xOffset;
+            // //double z_sqrtIn = 1 - ((l1_sqre - l2_sqre + 1979649) / (4 * l1_sqre * l1_sqre * 1979649));
+            // //double delZ = 2000 - l1 * sqrt(z_sqrtIn);
+
+            // double z_cosIn = ((l1_sqre - l2_sqre + 1979649) / (l1 * 2814));
+            // double delZ = 2000 - l1*sin(acos(z_cosIn));
+
+            
+
+            double delX = ((l1_sqre - l2_sqre + xMotordist_sqre) / (xMotordist)) - xOffset;
             //double z_sqrtIn = 1 - ((l1_sqre - l2_sqre + 1979649) / (4 * l1_sqre * l1_sqre * 1979649));
             //double delZ = 2000 - l1 * sqrt(z_sqrtIn);
 
-            double z_cosIn = ((l1_sqre - l2_sqre + 1979649) / (l1 * 2814));
-            double delZ = 2000 - l1*sin(acos(z_cosIn));
+            double z_cosIn = ((l1_sqre - l2_sqre + xMotordist_sqre) / (l1 * xMotordist));
+            double delZ = zMotordist - l1*sin(acos(z_cosIn)) - zOffset;
             
-            posX = waypointmsg.linear.x;
-            posZ = waypointmsg.linear.z;
-            speed = waypointmsg.linear.y;
-            curPositionPub.linear.x = delX;
-            curPositionPub.linear.z = delZ;
+            posX = waypointmsg.linear.x;        // Received waypoint position X-axis
+            posZ = waypointmsg.linear.z;        // Received waypoint position Z-axis
+            speed = waypointmsg.linear.y;       // Received speed at waypoint position
+            curPositionPub.linear.x = delX;     // Forward kinematics publish X-axis
+            curPositionPub.linear.z = delZ;     // Forward kinematics publish Z-axis
             
-            double lengthCable1New = calcLength((xOffset + posX), (wsZ + zOffset) - posZ);
-            double lengthCable2New = calcLength(((wsX + xOffset) - posX), ((wsZ + zOffset) - posZ));
+            double lengthCable1New = calcLength((xOffset + posX), (wsZ + zOffset) - posZ);              // Calculate length of cable 1 with desired position
+            double lengthCable2New = calcLength(((wsX + xOffset) - posX), ((wsZ + zOffset) - posZ));    // Calculate length of cable 2 with desired position
 
-            steps1 = calcStepAmount(lengthCable1New - lengthCable1);
-            steps2 = calcStepAmount(lengthCable2New - lengthCable2);
+            steps1 = calcStepAmount(lengthCable1New - lengthCable1);    // Calculate steps for cable 1
+            steps2 = calcStepAmount(lengthCable2New - lengthCable2);    // Calculate steps for cable 2
 
-            double absSteps1 = steps1 - stepsM1_old;
+            double absSteps1 = steps1 - stepsM1_old;   
             double absSteps2 = steps2 - stepsM2_old;
 
-            calcSpeed(absSteps1, speed1, absSteps2, speed2, speed);
+            calcSpeed(absSteps1, speed1, absSteps2, speed2, speed);     // Calculate speed of motors via linear interpolation
+
+            //calcSpeed(steps1, speed1, steps2, speed2, speed);   
+
+            // Fill motorcontrol message with calculated variables
             msgs.linear.x = steps1;
             msgs.linear.z = steps2;
             msgs.angular.x = speed1;
             msgs.angular.z = speed2;
             msgs.angular.y = 0;
 
+
+            // Check if near desired position: if yes then ask for new position
             if((abs(absSteps1) <= 100 && abs(absSteps2) <= 100) && singleShot != true) {
                 getNewPos.data = true;
                 waypointPub.publish(getNewPos);
                 i = 0;
-                singleShot = true;
+                singleShot = true; // limits amount of requests
             }
+            // sets 'ask for new position' variable to 'NO'. repeating this two times.
             else if((stepsM1_old != steps1 || stepsM2_old != steps2) && singleShot == true){
                 i += 1;
                 if(i <= 3) {
                     getNewPos.data = false;
                     waypointPub.publish(getNewPos);
                 }  
+
+                // set limited request value back to false
                 else if(i >= 4 && singleShot == true){
                     singleShot = false;
                     i = 0;
@@ -273,15 +285,14 @@ int main(int argc, char** argv)
         else if (modePointer == 5 && int(motormsg.angular.y) == 0) {
             // Mode 5 Normal control via joystick.
 
-            joyX = int(joystickmsg.linear.x);
-            joyZ = int(joystickmsg.linear.z);
-            int stepsM1_old = int(motormsg.linear.x);
-            int stepsM2_old = int(motormsg.linear.z);
-
-            double lenCableM1 = stepsM1_old * mmPuls + lengthCable1;
-            double lenCableM2 = stepsM2_old * mmPuls + lengthCable2;
+            joyX = int(joystickmsg.linear.x);           // get joystick X-axis value 
+            joyZ = int(joystickmsg.linear.z);           // get joystick Z-axis value
+            int stepsM1_old = int(motormsg.linear.x);   // get previous known steps motor 1 (LEFT UP)
+            int stepsM2_old = int(motormsg.linear.z);   // get previous known steps motor 2 (RIGHT UP)
             
-            if((posX + joyX) >= wsX) {
+
+            // Maximum allowed position variables
+            if((posX + joyX) >= wsX) {          
                     
                 posX = wsX;
             }
@@ -303,15 +314,19 @@ int main(int argc, char** argv)
                 posZ += joyZ / 10;
             }
 
+
+            // Calculate length of new cable positions
             double lengthCable1New = calcLength(xOffset + posX, (wsZ + zOffset) - posZ);
             double lengthCable2New = calcLength((wsX + xOffset) - posX, (wsZ + zOffset) - posZ);
 
+            // Calculate amount of steps with new cable positions
             steps1 = calcStepAmount(lengthCable1New - lengthCable1);
             steps2 = calcStepAmount(lengthCable2New - lengthCable2);
 
-            
+            // calculateds speed with joystick inputs.
             calcSpeedJoy(joyX, joyZ, speed1, speed2);
 
+            // Fill motorcontrol message with calculated variables
             msgs.linear.x = steps1;
             msgs.angular.x = speed1;
             msgs.linear.z = steps2;
@@ -322,11 +337,12 @@ int main(int argc, char** argv)
         else if (modePointer == 6 && int(motormsg.angular.y) == 0) {
             // Mode 6 ERROR handler.
 
+            // Fill motorcontrol message with specific variables
             msgs.linear.x = motormsg.linear.x;
             msgs.angular.x = 0.0;
             msgs.linear.z = motormsg.linear.z;
             msgs.angular.z = 0.0;
-            msgs.angular.y = -666.0;
+            msgs.angular.y = -666.0;        // Negative 666 (motor reset known in program Arduino)
 
         }
         else if (modePointer == 7 && int(motormsg.angular.y) == 0) {
@@ -343,14 +359,17 @@ int main(int argc, char** argv)
             steps2 = calcStepAmount(lengthCable2New - lengthCable2);
 
             calcSpeed(steps1, speed1, steps2, speed2, speed);
-            msgs.linear.x = steps1;
-            msgs.linear.z = steps2;
+            msgs.linear.x = 0;
+            msgs.linear.z = 0;
             msgs.angular.x = speed1;
             msgs.angular.z = speed2;
             msgs.angular.y = 0;
 
         }
         else if (int(motormsg.angular.y) != 0) {
+            // Motor in fault status 
+
+            // sets all variables to known values and no movement.
             msgs.linear.x = motormsg.linear.x;
             msgs.linear.z = motormsg.linear.z;
 
@@ -366,22 +385,23 @@ int main(int argc, char** argv)
             modePointer = 0;
         }
 
-        // Publish it and resolve any remaining callbacks
+        // Publish messages and resolve any remaining callbacks
         motorPub.publish(msgs);
         curposPub.publish(curPositionPub);
         ros::spinOnce();
-        r.sleep();
+        r.sleep(); // limits the program to 30 Hz
     }
     return 0;
 }
 
 double calcLength(int x, int z) {
-    return(sqrt(pow(x, 2.0) + pow(z, 2.0)));
+    return(sqrt(pow(x, 2.0) + pow(z, 2.0))); // pythagoras theorem
 }
 
 void calcSpeed(double len1, float& speed1, double len2, float& speed2, int Maxspeed) {
     float time = 0.0;
 
+    // Linear interpolation
     if(abs(len1) < abs(len2)) {
         time = abs(len2 / Maxspeed);
         speed1 = abs(len1 / time);
@@ -401,28 +421,7 @@ void calcSpeed(double len1, float& speed1, double len2, float& speed2, int Maxsp
 void calcSpeedJoy(int joyx, int joyz, float& speed1, float& speed2) {
     float time = 0.0;
     int speedVar = 200;
-    /*
-    if(abs(joyx) > abs(joyz)) {
-        posX = posX + joyx / 10;
-        speedVar = (abs(joyx) * 3) + 200;
-        time = abs(posX / speedVar);
-        speed2 = speedVar;
-    }
-    
-    else if(abs(joyz) > abs(joyx)) {
-        
-        speedVar = (abs(joyz) * 10) + 200;
-        time = abs(len1 / speedVar);
-        speed1 = speedVar;
-        speed2 = int(abs(len2 / time));
-        
-    }
-    else {
-        speedVar = 500;
-        speed1 = speedVar;
-        speed2 = speedVar;
-    }
-    */
+
 }
 
 int calcStepAmount(double value) {

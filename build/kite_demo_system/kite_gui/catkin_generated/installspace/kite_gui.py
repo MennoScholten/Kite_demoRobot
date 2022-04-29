@@ -30,36 +30,30 @@ navimsg = Twist()
 
 linRes = 0.184
 
+# class for creating the navigation drawer (left side menu)
 class ContentNavigationDrawer(MDBoxLayout):
     screen_manager = ObjectProperty()
     nav_drawer = ObjectProperty()
     
-
+# class which handels the gui
 class GuiApp(MDApp):
-    L_1 = float()
-    L_2 = float()
-    dialog = None
-    dialogMotor1 = None
-    dialogMotor2 = None
-    dialogMotors = None
-    dialogClose = None
-    dialogStart = None
-    singleDialog = True
+    dialogClose = None      # Dialog variable for closing the gui
+    dialogStart = None      # Dialog variable for starting the drivers
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.theme_cls.theme_style = "Dark"
+        self.theme_cls.theme_style = "Dark" # sets theme of GUI to DARK MODE
 
-        self.screen = Builder.load_file('/home/ubuntu/Desktop/KITE_demo_system/src/kite_demo_system/kite_gui/scripts/ros_gui.kv')
+        self.screen = Builder.load_file('/home/ubuntu/Desktop/KITE_demo_system/src/kite_demo_system/kite_gui/scripts/ros_gui.kv') # kivymd file location which is used to create GUI
 
     def build(self):
-        Window.size = (1024, 600)
-        Window.borderless = True
+        Window.size = (1024, 600)       # Sets window size to Raspbery Pi Touchscreen size
+        Window.borderless = True        # Removes border of application
         
         return self.screen
 
     def on_start(self):
-        self.fps_monitor_start()
+        self.fps_monitor_start()        # Shows a FPS (frames/second) monitor at the top
 
     def joyCallback(self, data):                                     # ROS Subscriber callback handler. Handles joystick callbacks
         joymsg.linear.x = data.linear.x
@@ -81,18 +75,22 @@ class GuiApp(MDApp):
         self.screen.ids.motorSpeed_two.text = '%s' % int(motormsg.angular.z)
 
     
-    def positionCallback(self,data):
+    def positionCallback(self,data):                            # ROS Subscriber callback handler. Handles the current position callbacks.
         self.screen.ids.curX.text = '%s' % int(data.linear.x)
         self.screen.ids.curZ.text = '%s' % int(data.linear.z)
+        self.screen.ids.curX_main.text = '%s' % int(data.linear.x)
+        self.screen.ids.curZ_main.text = '%s' % int(data.linear.z)
 
-    def navigationCallback(self, data):
+    def navigationCallback(self, data):                         # ROS Subscriber callback handler. Handles the desired position callbacks.
         navimsg.linear.x = data.linear.x
         navimsg.linear.z = data.linear.z
 
         self.screen.ids.targX.text = '%s' % int(navimsg.linear.x)
         self.screen.ids.targZ.text = '%s' % int(navimsg.linear.z)
+        self.screen.ids.targX_main.text = '%s' % int(navimsg.linear.x)
+        self.screen.ids.targZ_main.text = '%s' % int(navimsg.linear.z)
 
-    def startCallback(self):
+    def startCallback(self):       # Dialog handler for creating a dialog when pressing the 'Start' button 
         if not self.dialogStart:
             self.dialogStart = MDDialog(
                 text="Do you want to start the software and drivers?",
@@ -111,7 +109,7 @@ class GuiApp(MDApp):
             )
         self.dialogStart.open()
 
-    def stopCallback(self):
+    def stopCallback(self):     # Dialog handler for creating a dialog when pressing the 'Stop' button
         if not self.dialogClose:
             self.dialogClose = MDDialog(
                 text="Do you want to close the program?",
@@ -130,65 +128,69 @@ class GuiApp(MDApp):
             )
         self.dialogClose.open()
 
-    def startProgram(self, obj):
+    def startProgram(self, obj):    # Handles the starting of the drivers.
         # os.system("rosrun rosserial_python serial_node.py /dev/ttyACM0")
         time.sleep(1)
         self.close_startDialog
 
-    def stopProgram(self, obj):
+    def stopProgram(self, obj):     # Handles the exiting of ROSNODES and the ROSCORE and closes the GUI application
         msg = 0
         pub.publish(msg)
         self.dialogClose.dismiss()
-        os.system("rosnode kill -a")
+        os.system("rosnode kill -a")        # Kills all running ROSNODES
+        time.sleep(1)
+        os.system("killall - roscore")      # Kills running ROSCORE
+        os.system("killall - rosmaster")    # Kills running ROSMASTER
         time.sleep(1)
         self.stop()
 
-    def close_startDialog(self, obj):
+    def close_startDialog(self, obj):   # Exits the dialog for starting the drivers 
         self.dialogStart.dismiss()
 
-    def close_closeDialog(self, obj):
+    def close_closeDialog(self, obj):   # Exits the dialog for closing the GUI Application
         self.dialogClose.dismiss()
         
-    def motor1(self, *args):
+    def motor1(self, *args):        # Publishes: Mode = 1 to system_Mode (Joystick motor 1 controll)
         msg = 1
         pub.publish(msg)
 
-    def motor2(self, *args):
+    def motor2(self, *args):        # Publishes: Mode = 2 to system_Mode (Joystick motor 2 controll)
         msg = 2
         pub.publish(msg)
 
-    def homePos(self, *args):
+    def homePos(self, *args):       # Publishes: Mode = 3 to system_Mode (Set current position as Homeposition [0,0] (x,z))
         msg = 3
         pub.publish(msg)
-        singleDialog = False
 
+    def gohomePos(self, *args):     # Publishes: Mode = 7 to system_Mode (Go to homeposition [0,0](x,z))
+        msg = 7
+        pub.publish(msg)
 
-    def autoPos(self, *args):
+    def autoPos(self, *args):       # Publishes: Mode = 4 to system_Mode (Set system in automatic demonstration mode)
         msg = 4
         pub.publish(msg)
 
-    def manualPos(self, *args):
+    def manualPos(self, *args):     # Publishes: Mode = 5 to system_Mode (Set system in manual demonstration mode)
         msg = 5
         pub.publish(msg)
 
-    def resetMotor(self, *args):
+    def resetMotor(self, *args):    # Publishes: Mode = 6 to system_Mode (Reset any failures in motors)
         msg = 6
         pub.publish(msg)
-        singleDialog = True
 
 
 if __name__ == '__main__':
 
-    gui = GuiApp()
-    pub = rospy.Publisher('system_Mode', UInt16, queue_size = 1)
+    gui = GuiApp()  # Gui variable      
+    pub = rospy.Publisher('system_Mode', UInt16, queue_size = 1)        # Setup of ROS Publisher: system_Mode
 
-    rospy.init_node('kite_gui', anonymous=True)
+    rospy.init_node('kite_gui', anonymous=True)     # Initializes current node
 
-    rospy.Subscriber("joystick_teleop", Twist, gui.joyCallback, queue_size = 1)
-    rospy.Subscriber("motor_Position", Twist, gui.motorCallback, queue_size = 4)
-    rospy.Subscriber("navigation_position", Twist, gui.navigationCallback)
-    rospy.Subscriber("cur_position", Twist, gui.positionCallback)
+    rospy.Subscriber("joystick_teleop", Twist, gui.joyCallback, queue_size = 1)     # Subscribes to ROSNODE : joystick_teleop
+    rospy.Subscriber("motor_Position", Twist, gui.motorCallback, queue_size = 4)    # Subscribes to ROSNODE : motor_Position
+    rospy.Subscriber("navigation_position", Twist, gui.navigationCallback)          # Subscribes to ROSNODE : navigation_position
+    rospy.Subscriber("cur_position", Twist, gui.positionCallback)                   # Subscribes to ROSNODE : cur_position
 
-    gui.run()
+    gui.run()       # Starts GUI application
 
-    rospy.sleep(0.0001)
+    rospy.sleep(0.0001) # loops with a maximum of 10000 Hz
