@@ -6,8 +6,6 @@
 # Program designed by: Menno Scholten
 
 #!/usr/bin/env python3.8
-from distutils.command.config import config
-from distutils.log import error
 from math import sqrt
 import rospy
 import time
