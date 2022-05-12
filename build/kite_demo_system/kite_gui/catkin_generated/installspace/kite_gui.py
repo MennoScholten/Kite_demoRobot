@@ -6,6 +6,8 @@
 # Program designed by: Menno Scholten
 
 #!/usr/bin/env python3.8
+from distutils.command.config import config
+from distutils.log import error
 from math import sqrt
 import rospy
 import time
@@ -38,7 +40,11 @@ class ContentNavigationDrawer(MDBoxLayout):
 # class which handels the gui
 class GuiApp(MDApp):
     dialogClose = None      # Dialog variable for closing the gui
-    dialogStart = None      # Dialog variable for starting the drivers
+    dialogError = None      # Dialog variable for starting the drivers
+    error = False           # Error flag
+    errorVal = 0            # Value of error
+    dialogOpen = False      # Dialog open flag
+    singleShot = False      # Single excecution flag of function
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -47,8 +53,8 @@ class GuiApp(MDApp):
         self.screen = Builder.load_file('/home/ubuntu/Desktop/KITE_demo_system/src/kite_demo_system/kite_gui/scripts/ros_gui.kv') # kivymd file location which is used to create GUI
 
     def build(self):
-        Window.size = (1024, 600)       # Sets window size to Raspbery Pi Touchscreen size
-        Window.borderless = True        # Removes border of application
+        # Window.size = (1024, 900)       # Sets window size to Raspbery Pi Touchscreen size
+        # Window.borderless = True        # Removes border of application
         
         return self.screen
 
@@ -58,8 +64,8 @@ class GuiApp(MDApp):
     def joyCallback(self, data):                                     # ROS Subscriber callback handler. Handles joystick callbacks
         joymsg.linear.x = data.linear.x
         joymsg.linear.z = data.linear.z
-        self.screen.ids.joyPosX.text = '%s' % int(joymsg.linear.x)
-        self.screen.ids.joyPosZ.text = '%s' % int(joymsg.linear.z)
+        self.screen.ids.joyPosX.text = '%s %' % int(joymsg.linear.x)
+        self.screen.ids.joyPosZ.text = '%s %' % int(joymsg.linear.z)
 
     def motorCallback(self, data):                                  # ROS Subscriber callback handler. Handles motor information callbacks.
         motormsg.linear.x = data.linear.x
@@ -69,45 +75,117 @@ class GuiApp(MDApp):
         motormsg.angular.y = data.angular.y
         motormsg.angular.z = data.angular.z
 
-        self.screen.ids.motorPos_one.text = '%s' % int(motormsg.linear.x)
-        self.screen.ids.motorPos_two.text = '%s' % int(motormsg.linear.z)
-        self.screen.ids.motorSpeed_one.text = '%s' % int(motormsg.angular.x)
-        self.screen.ids.motorSpeed_two.text = '%s' % int(motormsg.angular.z)
+        self.screen.ids.motorPos_one.text = '%s mm' % int(motormsg.linear.x)
+        self.screen.ids.motorPos_two.text = '%s mm' % int(motormsg.linear.z)
+        self.screen.ids.motorSpeed_one.text = '%s RPM' % int(5.5 * motormsg.angular.x / 63)  # Calc speed in RPM
+        self.screen.ids.motorSpeed_two.text = '%s RPM' % int(5.5 * motormsg.angular.z / 63)     # Calc speed in RPM
 
     
     def positionCallback(self,data):                            # ROS Subscriber callback handler. Handles the current position callbacks.
-        self.screen.ids.curX.text = '%s' % int(data.linear.x)
-        self.screen.ids.curZ.text = '%s' % int(data.linear.z)
-        self.screen.ids.curX_main.text = '%s' % int(data.linear.x)
-        self.screen.ids.curZ_main.text = '%s' % int(data.linear.z)
+        self.screen.ids.curX.text = '%s mm' % int(data.linear.x)
+        self.screen.ids.curZ.text = '%s mm' % int(data.linear.z)
+        self.screen.ids.curX_main.text = '%s mm' % int(data.linear.x)
+        self.screen.ids.curZ_main.text = '%s mm' % int(data.linear.z)
+        if(int(data.angular.y) < 0 and self.singleShot == False):
+            self.screen.ids.toolbar.md_bg_color = (1, 0, 0, 1)
+            self.error = True
+            if(int(data.angular.y) == -5555):
+                self.errorVal = 1
+            elif(int(data.angular.y) == -7777):
+                self.errorVal = 2
+            elif(int(data.angular.y) == -9999):
+                self.errorVal = 3
+            else:
+                self.errorVal = 4
+
+            self.singleShot == True
 
     def navigationCallback(self, data):                         # ROS Subscriber callback handler. Handles the desired position callbacks.
         navimsg.linear.x = data.linear.x
         navimsg.linear.z = data.linear.z
 
-        self.screen.ids.targX.text = '%s' % int(navimsg.linear.x)
-        self.screen.ids.targZ.text = '%s' % int(navimsg.linear.z)
-        self.screen.ids.targX_main.text = '%s' % int(navimsg.linear.x)
-        self.screen.ids.targZ_main.text = '%s' % int(navimsg.linear.z)
+        self.screen.ids.targX.text = '%s mm' % int(navimsg.linear.x)
+        self.screen.ids.targZ.text = '%s mm' % int(navimsg.linear.z)
+        self.screen.ids.targX_main.text = '%s mm' % int(navimsg.linear.x)
+        self.screen.ids.targZ_main.text = '%s mm' % int(navimsg.linear.z)
 
-    def startCallback(self):       # Dialog handler for creating a dialog when pressing the 'Start' button 
-        if not self.dialogStart:
-            self.dialogStart = MDDialog(
-                text="Do you want to start the software and drivers?",
-                buttons=[
-                    MDFlatButton(
-                        text="YES",
-                        theme_text_color = "Custom",
-                        text_color=self.theme_cls.primary_color, on_release = self.startProgram
-                    ),
-                    MDFlatButton(
-                        text="NO",
-                        theme_text_color = "Custom",
-                        text_color=self.theme_cls.primary_color, on_release = self.close_startDialog
-                    ),
-                ],
-            )
-        self.dialogStart.open()
+    def errorPress(self):
+        if(self.error == True):
+            if not self.dialogClose:
+                if(self.errorVal == 1):
+                    self.dialogError = MDDialog(
+                    title="Error in TOP RIGHT motordriver!",
+                    text="Do you want to reset motordrivers?",
+                    buttons=[
+                        MDFlatButton(
+                            text="YES",
+                            theme_text_color = "Custom",
+                            text_color=self.theme_cls.primary_color, on_release = self.resetMotor
+                        ),
+                        MDFlatButton(
+                            text="NO",
+                            theme_text_color = "Custom",
+                            text_color=self.theme_cls.primary_color, on_release = self.close_errorDialog
+                        ),
+                    ],
+                    )
+
+                elif(self.errorVal == 2):
+                    self.dialogError = MDDialog(
+                    title="Error in TOP LEFT motordriver!",
+                    text="Do you want to reset motordrivers?",
+                    buttons=[
+                        MDFlatButton(
+                            text="YES",
+                            theme_text_color = "Custom",
+                            text_color=self.theme_cls.primary_color, on_release = self.resetMotor
+                        ),
+                        MDFlatButton(
+                            text="NO",
+                            theme_text_color = "Custom",
+                            text_color=self.theme_cls.primary_color, on_release = self.close_errorDialog
+                        ),
+                    ],
+                    )
+
+                elif(self.errorVal == 3):
+                    self.dialogError = MDDialog(
+                    title="Error in BOTH motordrivers!",
+                    text="Do you want to reset motordrivers?",
+                    buttons=[
+                        MDFlatButton(
+                            text="YES",
+                            theme_text_color = "Custom",
+                            text_color=self.theme_cls.primary_color, on_release = self.resetMotor
+                        ),
+                        MDFlatButton(
+                            text="NO",
+                            theme_text_color = "Custom",
+                            text_color=self.theme_cls.primary_color, on_release = self.close_errorDialog
+                        ),
+                    ],
+                    )
+
+                elif(self.errorVal == 4):
+                    self.dialogError = MDDialog(
+                    title="Unknown error in motordrivers!",
+                    text="Do you want to reset motordrivers?",
+                    buttons=[
+                        MDFlatButton(
+                            text="YES",
+                            theme_text_color = "Custom",
+                            text_color=self.theme_cls.primary_color, on_release = self.resetMotor
+                        ),
+                        MDFlatButton(
+                            text="NO",
+                            theme_text_color = "Custom",
+                            text_color=self.theme_cls.primary_color, on_release = self.close_errorDialog
+                        ),
+                    ],
+                    )
+            self.dialogError.open() 
+            self.dialogOpen = True 
+
 
     def stopCallback(self):     # Dialog handler for creating a dialog when pressing the 'Stop' button
         if not self.dialogClose:
@@ -128,11 +206,6 @@ class GuiApp(MDApp):
             )
         self.dialogClose.open()
 
-    def startProgram(self, obj):    # Handles the starting of the drivers.
-        # os.system("rosrun rosserial_python serial_node.py /dev/ttyACM0")
-        time.sleep(1)
-        self.close_startDialog
-
     def stopProgram(self, obj):     # Handles the exiting of ROSNODES and the ROSCORE and closes the GUI application
         msg = 0
         pub.publish(msg)
@@ -144,8 +217,8 @@ class GuiApp(MDApp):
         time.sleep(1)
         self.stop()
 
-    def close_startDialog(self, obj):   # Exits the dialog for starting the drivers 
-        self.dialogStart.dismiss()
+    def close_errorDialog(self, obj):   # Exits the dialog for starting the drivers 
+        self.dialogError.dismiss()
 
     def close_closeDialog(self, obj):   # Exits the dialog for closing the GUI Application
         self.dialogClose.dismiss()
@@ -159,6 +232,7 @@ class GuiApp(MDApp):
         pub.publish(msg)
 
     def homePos(self, *args):       # Publishes: Mode = 3 to system_Mode (Set current position as Homeposition [0,0] (x,z))
+        self.screen.ids.toolbar.md_bg_color = (0, 0, 1, 1)
         msg = 3
         pub.publish(msg)
 
@@ -175,11 +249,23 @@ class GuiApp(MDApp):
         pub.publish(msg)
 
     def resetMotor(self, *args):    # Publishes: Mode = 6 to system_Mode (Reset any failures in motors)
+        self.error == False
+        self.errorVal = 0
+        if(self.dialogOpen == True):
+            self.dialogError.dismiss()
+            self.dialogOpen = False
         msg = 6
         pub.publish(msg)
+        time.sleep(2)
+        self.singleShot == False
+        self.screen.ids.toolbar.md_bg_color = (0, 0, 1, 1)
 
 
 if __name__ == '__main__':
+
+    Config.set('graphics', 'fullscreen', 'auto')
+    Config.set('graphics', 'window_state', 'maximized')
+    Config.write()
 
     gui = GuiApp()  # Gui variable      
     pub = rospy.Publisher('system_Mode', UInt16, queue_size = 1)        # Setup of ROS Publisher: system_Mode

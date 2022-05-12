@@ -19,7 +19,8 @@
 #define xMotordist wsX + 2 * xOffset    // Distance between cablepoints X-axis (mm)
 #define zMotordist wsZ + 2 * zOffset    // Distacne between cablepoints Z-axis (mm)
 
-#define mmPuls 0.182
+//#define mmPuls 0.182
+#define mmPuls 0.17583
 
 #define maxSpeed 500                  // Maximum speed of the motors in pulses/second
 
@@ -49,6 +50,7 @@ void subModeCallback(const std_msgs::UInt16::ConstPtr& msg) {           // callb
 void subMotorPositionCallback(const geometry_msgs::Twist::ConstPtr& msg) {  // callback handler for getting motor position messages
     motormsg.linear.x = msg->linear.x;
     motormsg.linear.z = msg->linear.z;
+    motormsg.angular.y = msg->angular.y;
 
 }
 
@@ -142,6 +144,7 @@ int main(int argc, char** argv)
             msgs.angular.x = speed;
             msgs.angular.z = 0;
             msgs.angular.y = 0;
+            curPositionPub.angular.y = 0;
         }
         
         else if (modePointer == 2 && int(motormsg.angular.y) == 0) {
@@ -179,6 +182,7 @@ int main(int argc, char** argv)
             msgs.angular.x = 0;
             msgs.angular.z = speed;
             msgs.angular.y = 0;
+            curPositionPub.angular.y = 0;
         }
 
         else if (modePointer == 3 && int(motormsg.angular.y) == 0) {
@@ -196,6 +200,7 @@ int main(int argc, char** argv)
             msgs.angular.x = 0;
             msgs.angular.z = 0;
             msgs.angular.y = -250; // Home variable picked-up by arduino 
+            curPositionPub.angular.y = 0;
 
         }
 
@@ -245,6 +250,7 @@ int main(int argc, char** argv)
             msgs.angular.x = speed1;
             msgs.angular.z = speed2;
             msgs.angular.y = 0;
+            curPositionPub.angular.y = 0;
 
 
             // Check if near desired position: if yes then ask for new position
@@ -339,9 +345,10 @@ int main(int argc, char** argv)
             msgs.linear.z = steps2;
             msgs.angular.z = speed2;
             msgs.angular.y = 0;
+            curPositionPub.angular.y = 0;
 
         }
-        else if (modePointer == 6 && int(motormsg.angular.y) == 0) {
+        else if (modePointer == 6) {
             // Mode 6 ERROR handler.
 
             // Fill motorcontrol message with specific variables
@@ -350,6 +357,7 @@ int main(int argc, char** argv)
             msgs.linear.z = motormsg.linear.z;
             msgs.angular.z = 0.0;
             msgs.angular.y = -666.0;        // Negative 666 (motor reset known in program Arduino)
+            curPositionPub.angular.y = 0;
 
         }
         else if (modePointer == 7 && int(motormsg.angular.y) == 0) {
@@ -394,6 +402,7 @@ int main(int argc, char** argv)
             msgs.angular.x = speed1;
             msgs.angular.z = speed2;
             msgs.angular.y = 0;
+            curPositionPub.angular.y = 0;
 
         }
         else if (int(motormsg.angular.y) != 0) {
@@ -402,6 +411,18 @@ int main(int argc, char** argv)
             // sets all variables to known values and no movement.
             msgs.linear.x = motormsg.linear.x;
             msgs.linear.z = motormsg.linear.z;
+            if(int(motormsg.angular.y) == -5555) {
+                curPositionPub.angular.y = -5555.0;
+            }
+            else if(int(motormsg.angular.y) == -7777){
+                curPositionPub.angular.y = -7777.0;
+            }
+            else if(int(motormsg.angular.y) == -9999) {
+                curPositionPub.angular.y = -9999.0;
+            }
+            else{
+                curPositionPub.angular.y = 0;
+            }
 
             joyX = 0;
             joyZ = 0;

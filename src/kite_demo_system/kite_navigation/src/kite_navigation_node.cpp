@@ -7,9 +7,9 @@ bool messageGot = false;
 
 int posX[9] = {125, 145, 395, 415, 553, 692, 712, 962, 982};                                                // X-axis coordinate positions
 
-int posZ[16]   = {0, 125, 380, 760, 1140, 1520, 1775, 1900, 1900, 1775, 1520, 1140, 760, 380, 125, 0};      // Z-axis coordinate positions
+int posZ[16]   = {0, 125, 340, 680, 1020, 1360, 1575, 1700, 1700, 1575, 1360, 1020, 680, 340, 125, 0};      // Z-axis coordinate positions
 
-int maxSpeed[16]   = {375, 450, 500, 500, 500, 450, 375, 300, 300, 375, 450, 500, 500, 500, 450, 375};      // Maximum speed at specifiek Z-axis locations
+int maxSpeed[16]   = {250, 375, 500, 500, 500, 450, 375, 250, 250, 375, 450, 500, 500, 500, 375, 250};      // Maximum speed at specifiek Z-axis locations
 
 int pX = 0;         // Position counter X-axis
 int pZ = 0;         // Position counter Z-axis
