@@ -6,8 +6,6 @@
 # Program designed by: Menno Scholten
 
 #!/usr/bin/env python3.8
-from distutils.command.config import config
-from distutils.log import error
 from math import sqrt
 import rospy
 import time
@@ -17,20 +15,21 @@ from kivymd.uix.boxlayout import MDBoxLayout
 from kivy.properties import ObjectProperty
 from kivymd.uix.button import MDFlatButton
 from kivymd.uix.dialog import MDDialog
+
 from kivy.core.window import Window
-from kivy.config import Config
-from kivy.clock import Clock
 
 from kivymd.app import MDApp
 from kivy.lang import Builder
+
 from std_msgs.msg import UInt16
 from geometry_msgs.msg import Twist
+
+from kivy.config import Config
+
 
 joymsg = Twist()
 motormsg = Twist()
 navimsg = Twist()
-
-linRes = 0.184
 
 # class for creating the navigation drawer (left side menu)
 class ContentNavigationDrawer(MDBoxLayout):
@@ -41,31 +40,34 @@ class ContentNavigationDrawer(MDBoxLayout):
 class GuiApp(MDApp):
     dialogClose = None      # Dialog variable for closing the gui
     dialogError = None      # Dialog variable for starting the drivers
+    dialogUserError = None  # Dialog variable for user errors
+
     error = False           # Error flag
     errorVal = 0            # Value of error
     dialogOpen = False      # Dialog open flag
     singleShot = False      # Single excecution flag of function
+    homeCompleted = False   # Home completed flag
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.theme_cls.theme_style = "Dark" # sets theme of GUI to DARK MODE
-
         self.screen = Builder.load_file('/home/ubuntu/Desktop/KITE_demo_system/src/kite_demo_system/kite_gui/scripts/ros_gui.kv') # kivymd file location which is used to create GUI
 
+        Window.size = (1024, 600)
+
     def build(self):
-        # Window.size = (1024, 900)       # Sets window size to Raspbery Pi Touchscreen size
-        # Window.borderless = True        # Removes border of application
         
         return self.screen
 
     def on_start(self):
         self.fps_monitor_start()        # Shows a FPS (frames/second) monitor at the top
+        pass
 
     def joyCallback(self, data):                                     # ROS Subscriber callback handler. Handles joystick callbacks
         joymsg.linear.x = data.linear.x
         joymsg.linear.z = data.linear.z
-        self.screen.ids.joyPosX.text = '%s %' % int(joymsg.linear.x)
-        self.screen.ids.joyPosZ.text = '%s %' % int(joymsg.linear.z)
+        self.screen.ids.joyPosX.text = '%s' % int(joymsg.linear.x)
+        self.screen.ids.joyPosZ.text = '%s' % int(joymsg.linear.z)
 
     def motorCallback(self, data):                                  # ROS Subscriber callback handler. Handles motor information callbacks.
         motormsg.linear.x = data.linear.x
@@ -90,14 +92,18 @@ class GuiApp(MDApp):
             self.screen.ids.toolbar.md_bg_color = (1, 0, 0, 1)
             self.error = True
             if(int(data.angular.y) == -5555):
+                self.homeCompleted = False
                 self.errorVal = 1
             elif(int(data.angular.y) == -7777):
+                self.homeCompleted = False
                 self.errorVal = 2
             elif(int(data.angular.y) == -9999):
+                self.homeCompleted = False
                 self.errorVal = 3
             else:
+                self.homeCompleted = False
                 self.errorVal = 4
-
+        
             self.singleShot == True
 
     def navigationCallback(self, data):                         # ROS Subscriber callback handler. Handles the desired position callbacks.
@@ -222,6 +228,9 @@ class GuiApp(MDApp):
 
     def close_closeDialog(self, obj):   # Exits the dialog for closing the GUI Application
         self.dialogClose.dismiss()
+
+    def close_userErrorDialog(self, obj):   # Exits the dialog for visualizing user errors
+        self.dialogUserError.dismiss()
         
     def motor1(self, *args):        # Publishes: Mode = 1 to system_Mode (Joystick motor 1 controll)
         msg = 1
@@ -232,25 +241,75 @@ class GuiApp(MDApp):
         pub.publish(msg)
 
     def homePos(self, *args):       # Publishes: Mode = 3 to system_Mode (Set current position as Homeposition [0,0] (x,z))
-        self.screen.ids.toolbar.md_bg_color = (0, 0, 1, 1)
+        self.screen.ids.toolbar.md_bg_color = (0.00392157, 0.30196078, 0.59607843, 1)
         msg = 3
+        self.homeCompleted = True
         pub.publish(msg)
+        if(self.dialogUserError != None):
+            self.dialogUserError.dismiss()
 
     def gohomePos(self, *args):     # Publishes: Mode = 7 to system_Mode (Go to homeposition [0,0](x,z))
         msg = 7
         pub.publish(msg)
 
     def autoPos(self, *args):       # Publishes: Mode = 4 to system_Mode (Set system in automatic demonstration mode)
+        if(self.homeCompleted == False):
+            if not self.dialogUserError:
+                self.dialogUserError = MDDialog(
+                title="HOME position not set!",
+                text="is the KITE Robot at home position?",
+                buttons=[
+                    MDFlatButton(
+                        text="YES",
+                        theme_text_color = "Custom",
+                        text_color=self.theme_cls.primary_color, on_release = self.homePos
+                    ),
+                    MDFlatButton(
+                        text="NO",
+                        theme_text_color = "Custom",
+                        text_color=self.theme_cls.primary_color, on_release = self.close_userErrorDialog
+                    ),
+                ],
+                )
+            self.dialogUserError.open()
+        elif(self.homeCompleted == True):
+            self.autoPosPub()
+
+    def autoPosPub(self):
         msg = 4
         pub.publish(msg)
 
     def manualPos(self, *args):     # Publishes: Mode = 5 to system_Mode (Set system in manual demonstration mode)
+        if(self.homeCompleted == False):
+            if not self.dialogUserError:
+                self.dialogUserError = MDDialog(
+                title="HOME position not set!",
+                text="is the KITE Robot at home position?",
+                buttons=[
+                    MDFlatButton(
+                        text="YES",
+                        theme_text_color = "Custom",
+                        text_color=self.theme_cls.primary_color, on_release = self.homePos
+                    ),
+                    MDFlatButton(
+                        text="NO",
+                        theme_text_color = "Custom",
+                        text_color=self.theme_cls.primary_color, on_release = self.close_userErrorDialog
+                    ),
+                ],
+                )
+            self.dialogUserError.open()
+        elif(self.homeCompleted == True):
+            self.manualPosPub()
+
+    def manualPosPub(self):
         msg = 5
         pub.publish(msg)
 
     def resetMotor(self, *args):    # Publishes: Mode = 6 to system_Mode (Reset any failures in motors)
-        self.error == False
+        self.error = False
         self.errorVal = 0
+        self.homeCompleted = False
         if(self.dialogOpen == True):
             self.dialogError.dismiss()
             self.dialogOpen = False
@@ -258,14 +317,10 @@ class GuiApp(MDApp):
         pub.publish(msg)
         time.sleep(2)
         self.singleShot == False
-        self.screen.ids.toolbar.md_bg_color = (0, 0, 1, 1)
+        self.screen.ids.toolbar.md_bg_color = (1, 0.73, 0, 1)
 
 
 if __name__ == '__main__':
-
-    Config.set('graphics', 'fullscreen', 'auto')
-    Config.set('graphics', 'window_state', 'maximized')
-    Config.write()
 
     gui = GuiApp()  # Gui variable      
     pub = rospy.Publisher('system_Mode', UInt16, queue_size = 1)        # Setup of ROS Publisher: system_Mode
@@ -273,7 +328,7 @@ if __name__ == '__main__':
     rospy.init_node('kite_gui', anonymous=True)     # Initializes current node
 
     rospy.Subscriber("joystick_teleop", Twist, gui.joyCallback, queue_size = 1)     # Subscribes to ROSNODE : joystick_teleop
-    rospy.Subscriber("motor_Position", Twist, gui.motorCallback, queue_size = 4)    # Subscribes to ROSNODE : motor_Position
+    rospy.Subscriber("motor_Position", Twist, gui.motorCallback, queue_size = 1000)    # Subscribes to ROSNODE : motor_Position
     rospy.Subscriber("navigation_position", Twist, gui.navigationCallback)          # Subscribes to ROSNODE : navigation_position
     rospy.Subscriber("cur_position", Twist, gui.positionCallback)                   # Subscribes to ROSNODE : cur_position
 

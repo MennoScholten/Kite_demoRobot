@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=KITE_launcher
+Version=v0.8.5
+Icon=/home/ubuntu/Desktop/KITE_demo_system/src/kite_demo_system/kite_gui/resources/KiteLogo.png
+Exec=bash -c "source /opt/ros/noetic/setup.bash;source /home/ubuntu/Desktop/KITE_demo_system/devel/setup.bash;python3 /home/ubuntu/Desktop/KITE_demo_system/kite_launcher.py"
+Terminal=true
+Type=Application

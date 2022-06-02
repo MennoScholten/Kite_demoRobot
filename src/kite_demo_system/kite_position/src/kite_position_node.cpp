@@ -14,6 +14,7 @@
 
 #define wsX 1107                        // Workspace distance X-axis (mm)
 #define wsZ 1900                        // Workspace distance Z-axis (mm)
+#define wsZJoy 1700                        // Workspace distance Z-axis (mm)
 #define xOffset 150                     // Offset from workspace to cablepoint X-axis (mm)
 #define zOffset 100                     // Offset from workspace to cablepoint Z-axis (mm)
 #define xMotordist wsX + 2 * xOffset    // Distance between cablepoints X-axis (mm)
@@ -115,10 +116,10 @@ int main(int argc, char** argv)
 
             if(joyX > 0) {                  // sets maximum positive position (mm)
                     
-                curX = 200000;
+                curX = -200000;
             }
             else if(joyX < 0) {             // sets maximum negative position (mm)
-                curX = -200000;
+                curX = 200000;
             }
             else if(joyX == 0) {
                 curX = motormsg.linear.z;   // sets current position in steps
@@ -153,10 +154,10 @@ int main(int argc, char** argv)
 
             if(joyZ > 0) {              // sets maximum positive position (mm)
                     
-                curX = 200000;
+                curX = -200000;
             }
             else if(joyZ < 0) {         // sets maximum negative position (mm)
-                curX = -200000;
+                curX = 200000;
             }
             else if(joyZ == 0) {        // sets current position in steps
                 curX = motormsg.linear.z;
@@ -240,9 +241,7 @@ int main(int argc, char** argv)
             double absSteps1 = steps1 - stepsM1_old;   
             double absSteps2 = steps2 - stepsM2_old;
 
-            calcSpeed(absSteps1, speed1, absSteps2, speed2, speed);     // Calculate speed of motors via linear interpolation
-
-            //calcSpeed(steps1, speed1, steps2, speed2, speed);   
+            calcSpeed(absSteps1, speed1, absSteps2, speed2, speed);     // Calculate speed of motors via linear interpolation  
 
             // Fill motorcontrol message with calculated variables
             msgs.linear.x = steps1;
@@ -313,18 +312,18 @@ int main(int argc, char** argv)
                 posX = 0;
             }
             else {
-                posX += joyX / 10;
+                posX += joyX / 30;
             }
 
-            if((posZ + joyZ) >= wsZ) {
+            if((posZ + joyZ) >= wsZJoy) {
                     
-                posZ = wsZ;
+                posZ = wsZJoy;
             }
             else if((posZ + joyZ) <= 0) {
                 posZ = 0;
             }
             else {
-                posZ += joyZ / 10;
+                posZ += joyZ / 30;
             }
 
 
@@ -367,8 +366,6 @@ int main(int argc, char** argv)
             posZ = 0;
             speed = 500;
 
-            joyX = int(joystickmsg.linear.x);           // get joystick X-axis value 
-            joyZ = int(joystickmsg.linear.z);           // get joystick Z-axis value
             int stepsM1_old = int(motormsg.linear.x);   // get previous known steps motor 1 (LEFT UP)
             int stepsM2_old = int(motormsg.linear.z);   // get previous known steps motor 2 (RIGHT UP)
 
@@ -396,7 +393,7 @@ int main(int argc, char** argv)
             steps1 = calcStepAmount(lengthCable1New - lengthCable1);
             steps2 = calcStepAmount(lengthCable2New - lengthCable2);
 
-            calcSpeed(steps1, speed1, steps2, speed2, speed);
+            calcSpeed(steps1 - stepsM1_old, speed1, steps2 - stepsM2_old, speed2, speed);
             msgs.linear.x = 0;
             msgs.linear.z = 0;
             msgs.angular.x = speed1;
@@ -469,12 +466,13 @@ void calcSpeed(double len1, float& speed1, double len2, float& speed2, int Maxsp
     }
 }
 
+/*
 void calcSpeedJoy(int joyx, int joyz, float& speed1, float& speed2) {
     float time = 0.0;
     int speedVar = 200;
 
 }
-
+*/
 int calcStepAmount(double value) {
     return(int(value / mmPuls));
 }

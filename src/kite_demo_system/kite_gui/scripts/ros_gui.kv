@@ -61,7 +61,7 @@ MDScreen:
         elevation: 10
         title: "KITE Robotics: Main menu"
         left_action_items: [["menu", lambda x: nav_drawer.set_state("open")]]
-        right_action_items: [["play", lambda x: app.errorPress()],["close-octagon", lambda x: app.stopCallback()]]
+        right_action_items: [["alert-circle", lambda x: app.errorPress()],["close-octagon", lambda x: app.stopCallback()]]
 
     MDNavigationLayout:
         x: toolbar.height
@@ -273,7 +273,7 @@ MDScreen:
                         text: '%s' %int(0)
                         # halign: "center"
                         size_hint: 0.25, 0.5
-                        pos_hint: {"x": 0.75, "top": 1}
+                        pos_hint: {"x": 0.6, "top": 1}
 
                     MDLabel:
                         text: 'Joystick Z:'
@@ -284,7 +284,7 @@ MDScreen:
                         id: joyPosZ
                         text: '%s' %int(0)
                         size_hint: 0.25, 0.5
-                        pos_hint: {"x": 0.75, "top": 0.5}
+                        pos_hint: {"x": 0.6, "top": 0.5}
 
 
                 MDFloatLayout:
@@ -301,8 +301,8 @@ MDScreen:
                     MDLabel:
                         id: motorPos_one
                         text: '%s' %int(0)
-                        size_hint: 0.25, 0.5
-                        pos_hint: {"x": 0.55, "top": 1}
+                        size_hint: 0.8, 0.5
+                        pos_hint: {"x": 0.6, "top": 1}
 
                     MDLabel:
                         text: 'Position Motor 2:'
@@ -312,8 +312,8 @@ MDScreen:
                     MDLabel:
                         id: motorPos_two
                         text: '%s' %int(0)
-                        size_hint: 0.25, 0.5
-                        pos_hint: {"x": 0.55, "top": 0.5}
+                        size_hint: 0.8, 0.5
+                        pos_hint: {"x": 0.6, "top": 0.5}
 
                 MDFloatLayout:
                     radius: [25, 0, 25, 0]
@@ -329,8 +329,8 @@ MDScreen:
                     MDLabel:
                         id: motorSpeed_one
                         text: '%s' %int(0)
-                        size_hint: 0.25, 0.5
-                        pos_hint: {"x": 0.55, "top": 1}
+                        size_hint: 0.8, 0.5
+                        pos_hint: {"x": 0.6, "top": 1}
 
                     MDLabel:
                         text: 'Speed Motor 2:'
@@ -340,8 +340,8 @@ MDScreen:
                     MDLabel:
                         id: motorSpeed_two
                         text: '%s' %int(0)
-                        size_hint: 0.25, 0.5
-                        pos_hint: {"x": 0.55, "top": 0.5}
+                        size_hint: 0.8, 0.5
+                        pos_hint: {"x": 0.6, "top": 0.5}
 
                 MDFloatLayout:
                     radius: [25, 0, 25, 0]
@@ -359,8 +359,8 @@ MDScreen:
                         id: targX
                         text: '%s' %int(0)
                         # halign: "center"
-                        size_hint: 0.25, 0.5
-                        pos_hint: {"x": 0.75, "top": 1}
+                        size_hint: .8, 0.5
+                        pos_hint: {"x": 0.6, "top": 1}
 
                     MDLabel:
                         text: 'Target Z:'
@@ -370,8 +370,8 @@ MDScreen:
                     MDLabel:
                         id: targZ
                         text: '%s' %int(0)
-                        size_hint: 0.25, 0.5
-                        pos_hint: {"x": 0.75, "top": 0.5}
+                        size_hint: .8, 0.5
+                        pos_hint: {"x": 0.6, "top": 0.5}
 
                 MDFloatLayout:
                     radius: [25, 0, 25, 0]
@@ -389,8 +389,8 @@ MDScreen:
                         id: curX
                         text: '%s' %int(0)
                         # halign: "center"
-                        size_hint: 0.25, 0.5
-                        pos_hint: {"x": 0.75, "top": 1}
+                        size_hint: 0.8, 0.5
+                        pos_hint: {"x": 0.5, "top": 1}
 
                     MDLabel:
                         text: 'Cur Z:'
@@ -400,8 +400,8 @@ MDScreen:
                     MDLabel:
                         id: curZ
                         text: '%s' %int(0)
-                        size_hint: 0.25, 0.5
-                        pos_hint: {"x": 0.75, "top": 0.5}
+                        size_hint: 0.8, 0.5
+                        pos_hint: {"x": 0.5, "top": 0.5}
 
                 MDRaisedButton:
                     text: "Control: Motor 1"

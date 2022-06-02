@@ -28,8 +28,8 @@ config2 = [0xC2, 0xB3]
 
 deadzoneX = 0.1 #Joystick deadzone value (X-AXIS) 
 deadzoneZ = 0.1 #Joystick deadzone value (Z-AXIS) 
-X_rev = 1   # Change to -1 to reverse axis
-Z_rev = -1   # CHange to -1 to reverse axis
+X_rev = -1   # Change to -1 to reverse axis
+Z_rev = 1   # CHange to -1 to reverse axis
 
 msg = Twist()
 
@@ -59,13 +59,13 @@ def publisher():
         if(v <= 2.5 - deadzoneX or v >= 2.5 + deadzoneX):               # sets deadzone on X-Axis
             if(v <= 2.5):
                 x = X_rev * (v * (-50) + 125)
-                if(x >= X_rev * 98):
+                if(x >=  98):
                     x = X_rev * 100
                 msg.linear.x = x
 
             if(v >= 2.5):
                 x = X_rev * (v * (-55) + 125)
-                if(x <= X_rev *  -98):
+                if(x <=  -98):
                     x = X_rev * -100
                 msg.linear.x = x
         else :
@@ -92,13 +92,13 @@ def publisher():
         if(v <= 2.5 - deadzoneZ or v >= 2.5 + deadzoneZ):               # sets deadzone on Z-Axis
             if(v <= 2.5):
                 z = Z_rev * (v * (-50) + 125)
-                if(z <= Z_rev * 98):
+                if(z >= 98):
                     z = Z_rev * 100
                 msg.linear.z = z
 
             if(v >= 2.5):
                 z = Z_rev * (v * (-55) + 125)
-                if(z >= Z_rev * -98):
+                if(z <=  -98):
                     z = Z_rev * -100
                 msg.linear.z = z
 
